@@ -1,0 +1,85 @@
+services:
+  api:
+    build:
+      context: .
+      target: production
+    environment:
+      RH_DATABASE_URL: postgresql+asyncpg://resolvehub:resolvehub-local@postgres:5432/resolvehub
+      RH_REDIS_URL: redis://redis:6379/0
+      RH_TEMPORAL_ADDRESS: temporal:7233
+      RH_JWT_SECRET: local-compose-secret-change-before-deploying
+      RH_AI_ENABLED: ${RH_AI_ENABLED:-false}
+      RH_AI_PROVIDER: ${RH_AI_PROVIDER:-fake}
+      RH_AI_CONFIDENCE_THRESHOLD: ${RH_AI_CONFIDENCE_THRESHOLD:-0.65}
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  temporal:
+    image: temporalio/auto-setup:1.29.6
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: resolvehub
+      POSTGRES_PWD: resolvehub-local
+      POSTGRES_SEEDS: postgres
+    ports: ["${RH_TEMPORAL_PORT:-7234}:7233"]
+    depends_on:
+      postgres: {condition: service_healthy}
+  temporal-worker:
+    build:
+      context: .
+      target: production
+    command: ["python", "-m", "resolvehub.app.temporal.worker"]
+    environment: &worker-environment
+      RH_DATABASE_URL: postgresql+asyncpg://resolvehub:resolvehub-local@postgres:5432/resolvehub
+      RH_REDIS_URL: redis://redis:6379/0
+      RH_TEMPORAL_ADDRESS: temporal:7233
+      RH_JWT_SECRET: local-compose-secret-change-before-deploying
+    depends_on:
+      postgres: {condition: service_healthy}
+      temporal: {condition: service_started}
+  sla-orchestrator:
+    build:
+      context: .
+      target: production
+    command: ["python", "-m", "resolvehub.app.temporal.sla_orchestrator"]
+    environment: *worker-environment
+    depends_on:
+      postgres: {condition: service_healthy}
+      temporal: {condition: service_started}
+  outbox-worker:
+    build:
+      context: .
+      target: production
+    command: ["python", "-m", "resolvehub.app.temporal.outbox_worker"]
+    environment: *worker-environment
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_USER: resolvehub
+      POSTGRES_PASSWORD: resolvehub-local
+      POSTGRES_DB: resolvehub
+    ports: ["5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resolvehub -d resolvehub"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  redis:
+    image: redis:8.2-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ["1025:1025", "8025:8025"]
+volumes:
+  postgres_data:

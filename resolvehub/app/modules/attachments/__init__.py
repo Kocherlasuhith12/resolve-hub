@@ -1,0 +1,1 @@
+"""Ticket attachment metadata module."""

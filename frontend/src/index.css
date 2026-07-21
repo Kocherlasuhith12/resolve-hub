@@ -1,0 +1,24 @@
+:root {
+  font-family: 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+  color: #18231f;
+  background: #f4f3ec;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --ink: #18231f;
+  --muted: #62706a;
+  --paper: #fbfaf5;
+  --line: #d8ddd7;
+  --green: #194e3f;
+  --green-bright: #d9f15a;
+  --focus: #2e68ff;
+}
+
+* { box-sizing: border-box; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: wait; opacity: 0.65; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+h1, h2 { font-family: 'Avenir Next', 'Segoe UI', system-ui, sans-serif; }

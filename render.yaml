@@ -52,10 +52,7 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: resolvehub-api-suhith
-          property: url
+        value: https://resolvehub-api-suhith.onrender.com
 
 databases:
   # 4. PostgreSQL Database Instance

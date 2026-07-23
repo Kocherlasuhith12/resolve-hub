@@ -55,7 +55,7 @@ services:
         fromService:
           type: web
           name: resolvehub-api-suhith
-          property: url
+          property: connectionString
 
 databases:
   # 4. PostgreSQL Database Instance

@@ -4,7 +4,7 @@
 services:
   # 1. FastAPI Backend API Service
   - type: web
-    name: resolvehub-api
+    name: resolvehub-api-suhith
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
@@ -18,12 +18,12 @@ services:
         generateValue: true
       - key: RH_DATABASE_URL
         fromDatabase:
-          name: resolvehub-db
+          name: resolvehub-db-suhith
           property: connectionString
       - key: RH_REDIS_URL
         fromService:
           type: redis
-          name: resolvehub-redis
+          name: resolvehub-redis-suhith
           property: connectionString
       - key: RH_SERVE_FRONTEND
         value: "false"
@@ -36,7 +36,7 @@ services:
 
   # 2. React Frontend Static Site
   - type: web
-    name: resolvehub-frontend
+    name: resolvehub-frontend-suhith
     runtime: static
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/dist
@@ -48,18 +48,18 @@ services:
       - key: VITE_API_BASE_URL
         fromService:
           type: web
-          name: resolvehub-api
+          name: resolvehub-api-suhith
           property: url
 
 databases:
   # 3. PostgreSQL Database Instance
-  - name: resolvehub-db
+  - name: resolvehub-db-suhith
     plan: free
     databaseName: resolvehub
     user: resolvehub_user
 
 # 4. Redis Cache Instance
   - type: redis
-    name: resolvehub-redis
+    name: resolvehub-redis-suhith
     plan: free
     ipAllowList: []

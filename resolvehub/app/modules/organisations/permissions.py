@@ -24,6 +24,10 @@ SLA_MANAGE = "sla:manage"
 NOTIFICATION_READ = "notification:read"
 AI_SUGGEST = "ai:suggest"
 AI_REVIEW = "ai:review"
+MEMBER_UPDATE = "member:update"
+ANALYTICS_READ = "analytics:read"
+APIKEY_MANAGE = "apikey:manage"
+WEBHOOK_MANAGE = "webhook:manage"
 
 ADMIN_PERMISSIONS = frozenset(
     {
@@ -31,6 +35,7 @@ ADMIN_PERMISSIONS = frozenset(
         ORGANISATION_UPDATE,
         MEMBER_INVITE,
         MEMBER_READ,
+        MEMBER_UPDATE,
         DEPARTMENT_CREATE,
         DEPARTMENT_UPDATE,
         CATEGORY_CREATE,
@@ -53,6 +58,9 @@ ADMIN_PERMISSIONS = frozenset(
         NOTIFICATION_READ,
         AI_SUGGEST,
         AI_REVIEW,
+        ANALYTICS_READ,
+        APIKEY_MANAGE,
+        WEBHOOK_MANAGE,
     }
 )
 

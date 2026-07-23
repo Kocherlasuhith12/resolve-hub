@@ -64,6 +64,14 @@ class PolicyResponse(BaseModel):
     is_active: bool
 
 
+class PolicyUpdate(BaseModel):
+    first_response_minutes: int | None = Field(default=None, ge=1, le=525_600)
+    resolution_minutes: int | None = Field(default=None, ge=1, le=2_102_400)
+    warning_percent: int | None = Field(default=None, ge=1, le=99)
+    pause_on_waiting: bool | None = None
+    is_active: bool | None = None
+
+
 class TicketSlaResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     ticket_id: UUID

@@ -29,6 +29,7 @@ PERMISSION_DESCRIPTIONS = {
     "organisation:update": "Update organisation settings",
     "member:invite": "Invite organisation members",
     "member:read": "Read organisation members",
+    "member:update": "Update organisation member roles and status",
     "department:create": "Create departments",
     "department:update": "Update departments",
     "category:create": "Create service categories",
@@ -51,6 +52,9 @@ PERMISSION_DESCRIPTIONS = {
     "notification:read": "Read personal notifications",
     "ai:suggest": "Request optional AI suggestions for accessible tickets",
     "ai:review": "Accept or reject AI suggestions",
+    "analytics:read": "Read organisation analytics and download exports",
+    "apikey:manage": "Manage organisation API keys",
+    "webhook:manage": "Manage organisation webhook subscriptions",
 }
 
 DEFAULT_ROLE_PERMISSIONS = {
@@ -372,3 +376,126 @@ async def list_departments(
         .limit(200)
     )
     return list(result)
+
+
+async def update_member_role(
+    session: AsyncSession,
+    *,
+    actor_id: UUID,
+    organisation_id: UUID,
+    membership_id: UUID,
+    role_id: UUID,
+) -> tuple[Membership, User]:
+    await require_permission(
+        session,
+        user_id=actor_id,
+        organisation_id=organisation_id,
+        permission="member:update",
+    )
+    membership = await session.scalar(
+        select(Membership)
+        .options(selectinload(Membership.role).selectinload(Role.permissions))
+        .where(
+            Membership.id == membership_id,
+            Membership.organisation_id == organisation_id,
+        )
+        .with_for_update()
+    )
+    if membership is None:
+        raise AppError("MEMBERSHIP_NOT_FOUND", "Membership was not found.", 404)
+
+    target_role = await session.scalar(
+        select(Role)
+        .options(selectinload(Role.permissions))
+        .where(
+            Role.id == role_id,
+            Role.organisation_id == organisation_id,
+        )
+    )
+    if target_role is None:
+        raise AppError("ROLE_NOT_FOUND", "Role was not found in this organisation.", 404)
+
+    # Check if losing admin role leave zero active admins
+    old_has_admin = "member:update" in {p.code for p in membership.role.permissions}
+    new_has_admin = "member:update" in {p.code for p in target_role.permissions}
+    if old_has_admin and not new_has_admin:
+        active_admins = await session.scalars(
+            select(Membership)
+            .join(Role, Role.id == Membership.role_id)
+            .join(Role.permissions)
+            .where(
+                Membership.organisation_id == organisation_id,
+                Membership.is_active.is_(True),
+                Permission.code == "member:update",
+                Membership.id != membership_id,
+            )
+        )
+        if len(list(active_admins)) == 0:
+            raise AppError(
+                "CANNOT_REMOVE_LAST_ADMIN",
+                "Cannot remove admin permissions from the last active administrator.",
+                400,
+            )
+
+    membership.role_id = target_role.id
+    membership.role = target_role
+    await session.commit()
+    user = await session.scalar(select(User).where(User.id == membership.user_id))
+    if user is None:
+        raise AppError("USER_NOT_FOUND", "User was not found.", 404)
+    return membership, user
+
+
+async def update_member_status(
+    session: AsyncSession,
+    *,
+    actor_id: UUID,
+    organisation_id: UUID,
+    membership_id: UUID,
+    is_active: bool,
+) -> tuple[Membership, User]:
+    await require_permission(
+        session,
+        user_id=actor_id,
+        organisation_id=organisation_id,
+        permission="member:update",
+    )
+    membership = await session.scalar(
+        select(Membership)
+        .options(selectinload(Membership.role).selectinload(Role.permissions))
+        .where(
+            Membership.id == membership_id,
+            Membership.organisation_id == organisation_id,
+        )
+        .with_for_update()
+    )
+    if membership is None:
+        raise AppError("MEMBERSHIP_NOT_FOUND", "Membership was not found.", 404)
+
+    if not is_active and membership.is_active:
+        has_admin = "member:update" in {p.code for p in membership.role.permissions}
+        if has_admin:
+            active_admins = await session.scalars(
+                select(Membership)
+                .join(Role, Role.id == Membership.role_id)
+                .join(Role.permissions)
+                .where(
+                    Membership.organisation_id == organisation_id,
+                    Membership.is_active.is_(True),
+                    Permission.code == "member:update",
+                    Membership.id != membership_id,
+                )
+            )
+            if len(list(active_admins)) == 0:
+                raise AppError(
+                    "CANNOT_DEACTIVATE_LAST_ADMIN",
+                    "Cannot deactivate the last active administrator.",
+                    400,
+                )
+
+    membership.is_active = is_active
+    await session.commit()
+    user = await session.scalar(select(User).where(User.id == membership.user_id))
+    if user is None:
+        raise AppError("USER_NOT_FOUND", "User was not found.", 404)
+    return membership, user

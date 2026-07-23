@@ -171,6 +171,58 @@ async def list_policies(
     )
 
 
+async def update_policy(
+    session: AsyncSession,
+    *,
+    actor_id: UUID,
+    organisation_id: UUID,
+    policy_id: UUID,
+    first_response_minutes: int | None = None,
+    resolution_minutes: int | None = None,
+    warning_percent: int | None = None,
+    pause_on_waiting: bool | None = None,
+    is_active: bool | None = None,
+) -> SlaPolicy:
+    await require_permission(
+        session, user_id=actor_id, organisation_id=organisation_id, permission="sla:manage"
+    )
+    policy = await session.scalar(
+        select(SlaPolicy)
+        .where(
+            SlaPolicy.id == policy_id,
+            SlaPolicy.organisation_id == organisation_id,
+        )
+        .with_for_update()
+    )
+    if policy is None:
+        raise AppError("POLICY_NOT_FOUND", "SLA policy was not found.", 404)
+
+    new_first = (
+        first_response_minutes
+        if first_response_minutes is not None
+        else policy.first_response_minutes
+    )
+    new_res = resolution_minutes if resolution_minutes is not None else policy.resolution_minutes
+    if new_res < new_first:
+        raise AppError(
+            "SLA_TARGET_INVALID", "Resolution target cannot precede first response.", 422
+        )
+
+    if first_response_minutes is not None:
+        policy.first_response_minutes = first_response_minutes
+    if resolution_minutes is not None:
+        policy.resolution_minutes = resolution_minutes
+    if warning_percent is not None:
+        policy.warning_percent = warning_percent
+    if pause_on_waiting is not None:
+        policy.pause_on_waiting = pause_on_waiting
+    if is_active is not None:
+        policy.is_active = is_active
+
+    await session.commit()
+    return policy
+
+
 async def start_sla_for_ticket(
     session: AsyncSession, ticket: Ticket, now: datetime
 ) -> TicketSla | None:

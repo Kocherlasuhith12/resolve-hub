@@ -1,7 +1,19 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft } from 'lucide-react'
+import { readCookie } from '../../api/client'
 import { useAuth } from '../../auth/useAuth'
 import { AiReviewPanel } from './AiReviewPanel'
+
+type AttachmentItem = {
+  id: string
+  original_filename: string
+  content_type: string
+  size_bytes: number
+  upload_completed: boolean
+  scan_status: 'PENDING' | 'CLEAN' | 'INFECTED' | 'FAILED'
+  created_at: string
+}
 
 type TicketDetailRecord = {
   id: string
@@ -103,6 +115,45 @@ export function TicketDetail({
     queryFn: () =>
       request<TimelinePage>(`/organisations/${organisationId}/tickets/${ticketId}/timeline?limit=20`),
   })
+  const attachments = useQuery({
+    queryKey: ['ticket-attachments', organisationId, ticketId],
+    queryFn: () =>
+      request<AttachmentItem[]>(`/organisations/${organisationId}/tickets/${ticketId}/attachments`),
+  })
+  const uploadAttachment = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await fetch(`/api/v1/organisations/${organisationId}/tickets/${ticketId}/attachments`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+        headers: {
+          'X-CSRF-Token': readCookie('rh_csrf') || '',
+        },
+      })
+      if (!response.ok) throw new Error('Attachment upload failed.')
+      return response.json()
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['ticket-attachments', organisationId, ticketId] }),
+        queryClient.invalidateQueries({ queryKey: ['ticket-timeline', organisationId, ticketId] }),
+      ])
+    },
+  })
+  const deleteAttachment = useMutation({
+    mutationFn: (attachmentId: string) =>
+      request(`/organisations/${organisationId}/tickets/${ticketId}/attachments/${attachmentId}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['ticket-attachments', organisationId, ticketId] }),
+        queryClient.invalidateQueries({ queryKey: ['ticket-timeline', organisationId, ticketId] }),
+      ])
+    },
+  })
   const assignmentCandidates = useQuery({
     queryKey: ['assignment-candidates', organisationId],
     queryFn: () =>
@@ -189,20 +240,28 @@ export function TicketDetail({
     : (allowedTransitions[0] ?? '')
   return (
     <section className="request-detail" aria-labelledby="ticket-detail-title">
-      <button className="back-button" type="button" onClick={onBack}>← Back to requests</button>
+      <button className="detail-back" type="button" onClick={onBack}>
+        <ArrowLeft size={16} /> Back to requests
+      </button>
+
       <header className="detail-header">
         <div>
           <span className="ticket-number">{ticket.ticket_number}</span>
           <h2 id="ticket-detail-title">{ticket.title}</h2>
         </div>
         <div className="detail-badges">
-          <span>{readable(ticket.status)}</span>
-          <span className={`priority-badge priority-${ticket.priority.toLowerCase()}`}>
+          <span className={`badge badge-status status-${ticket.status.toLowerCase()}`}>
+            <span className="badge-dot" />
+            {readable(ticket.status)}
+          </span>
+          <span className={`badge badge-status priority-${ticket.priority.toLowerCase()}`}>
             {ticket.priority}
           </span>
         </div>
       </header>
+
       <p className="detail-description">{ticket.description}</p>
+
       <dl className="ticket-facts">
         <div><dt>SLA state</dt><dd>{readable(ticket.sla_state)}</dd></div>
         <div><dt>Created</dt><dd>{new Date(ticket.created_at).toLocaleString()}</dd></div>
@@ -244,7 +303,7 @@ export function TicketDetail({
                 </select>
               </label>
               <button
-                className="quiet-button"
+                className="btn-secondary"
                 type="submit"
                 disabled={assignTicket.isPending || assignmentCandidates.isPending}
               >
@@ -270,7 +329,7 @@ export function TicketDetail({
               {reasonRequired.has(selectedTransition) && (
                 <label><span>Reason</span><input name="reason" minLength={2} maxLength={500} required /></label>
               )}
-              <button className="primary-button" type="submit" disabled={transition.isPending}>
+              <button className="btn-primary" type="submit" disabled={transition.isPending}>
                 {transition.isPending ? 'Updating…' : 'Update status'}
               </button>
             </form>
@@ -286,6 +345,76 @@ export function TicketDetail({
         ticketId={ticketId}
         permissions={permissions}
       />
+
+      <section className="attachments-section" aria-labelledby="attachments-title">
+        <h3 id="attachments-title">Attachments</h3>
+        {permissionSet.has('attachment:create') && (
+          <form
+            className="attachment-upload-form"
+            onSubmit={(e) => {
+              e.preventDefault()
+              const fileInput = e.currentTarget.elements.namedItem('file') as HTMLInputElement
+              if (fileInput?.files?.[0]) {
+                uploadAttachment.mutate(fileInput.files[0], {
+                  onSuccess: () => {
+                    fileInput.value = ''
+                  },
+                })
+              }
+            }}
+          >
+            <label className="file-input-label">
+              <span>Upload file (PDF, PNG, JPG, TXT up to 10MB)</span>
+              <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.txt" required />
+            </label>
+            <button className="btn-secondary" type="submit" disabled={uploadAttachment.isPending}>
+              {uploadAttachment.isPending ? 'Uploading…' : 'Upload'}
+            </button>
+            {uploadAttachment.isError && (
+              <div className="form-error" role="alert">File upload failed. Check file size and type.</div>
+            )}
+          </form>
+        )}
+
+        <div className="attachments-list">
+          {attachments.isPending ? (
+            <p className="muted">Loading attachments…</p>
+          ) : (attachments.data?.length ?? 0) === 0 ? (
+            <p className="muted">No attachments uploaded yet.</p>
+          ) : (
+            <ul className="attachment-items">
+              {(attachments.data ?? []).map((att) => (
+                <li key={att.id} className="attachment-item">
+                  <div className="attachment-info">
+                    <strong className="attachment-name">{att.original_filename}</strong>
+                    <small className="muted">
+                      {(att.size_bytes / 1024).toFixed(1)} KB · Scan: {att.scan_status}
+                    </small>
+                  </div>
+                  <div className="attachment-actions">
+                    <a
+                      className="btn-ghost btn-sm"
+                      href={`/api/v1/organisations/${organisationId}/tickets/${ticketId}/attachments/${att.id}/download`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Download
+                    </a>
+                    <button
+                      className="btn-ghost btn-sm danger-text"
+                      type="button"
+                      onClick={() => deleteAttachment.mutate(att.id)}
+                      disabled={deleteAttachment.isPending}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
 
       <div className="conversation-layout">
         <section aria-labelledby="conversation-title">
@@ -319,7 +448,7 @@ export function TicketDetail({
               />
             </label>
             {addComment.isError && <div className="form-error" role="alert">Your reply could not be added.</div>}
-            <button className="primary-button" type="submit" disabled={addComment.isPending}>
+            <button className="btn-primary" type="submit" disabled={addComment.isPending}>
               {addComment.isPending ? 'Posting…' : 'Post reply'}
             </button>
           </form>

@@ -13,8 +13,10 @@ from resolvehub.app.modules.organisations.schemas import (
     InvitationCreate,
     InvitationLifecycleResponse,
     InvitationResponse,
+    MemberRoleUpdate,
     MembershipDirectoryResponse,
     MembershipResponse,
+    MemberStatusUpdate,
     OrganisationCreate,
     OrganisationResponse,
     RoleResponse,
@@ -32,6 +34,8 @@ from resolvehub.app.modules.organisations.service import (
     list_roles,
     resend_invitation,
     revoke_invitation,
+    update_member_role,
+    update_member_status,
 )
 
 router = APIRouter(tags=["Organisations"])
@@ -137,6 +141,68 @@ async def members_list(
         )
         for membership, user in items
     ]
+
+
+@router.patch(
+    "/organisations/{organisation_id}/members/{membership_id}/role",
+    response_model=MembershipDirectoryResponse,
+)
+async def member_role_update(
+    organisation_id: UUID,
+    membership_id: UUID,
+    payload: MemberRoleUpdate,
+    principal: CurrentPrincipal,
+    session: DbSession,
+) -> MembershipDirectoryResponse:
+    membership, user = await update_member_role(
+        session,
+        actor_id=principal.user.id,
+        organisation_id=organisation_id,
+        membership_id=membership_id,
+        role_id=payload.role_id,
+    )
+    return MembershipDirectoryResponse(
+        id=membership.id,
+        organisation_id=membership.organisation_id,
+        user_id=membership.user_id,
+        role_id=membership.role_id,
+        role_name=membership.role.name,
+        display_name=user.display_name,
+        email=user.email,
+        is_active=membership.is_active,
+        created_at=membership.created_at,
+    )
+
+
+@router.patch(
+    "/organisations/{organisation_id}/members/{membership_id}/status",
+    response_model=MembershipDirectoryResponse,
+)
+async def member_status_update(
+    organisation_id: UUID,
+    membership_id: UUID,
+    payload: MemberStatusUpdate,
+    principal: CurrentPrincipal,
+    session: DbSession,
+) -> MembershipDirectoryResponse:
+    membership, user = await update_member_status(
+        session,
+        actor_id=principal.user.id,
+        organisation_id=organisation_id,
+        membership_id=membership_id,
+        is_active=payload.is_active,
+    )
+    return MembershipDirectoryResponse(
+        id=membership.id,
+        organisation_id=membership.organisation_id,
+        user_id=membership.user_id,
+        role_id=membership.role_id,
+        role_name=membership.role.name,
+        display_name=user.display_name,
+        email=user.email,
+        is_active=membership.is_active,
+        created_at=membership.created_at,
+    )
 
 
 @router.get(

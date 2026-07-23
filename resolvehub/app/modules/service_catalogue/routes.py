@@ -3,8 +3,16 @@ from uuid import UUID
 from fastapi import APIRouter, status
 
 from resolvehub.app.core.dependencies import CurrentPrincipal, DbSession
-from resolvehub.app.modules.service_catalogue.schemas import CategoryCreate, CategoryResponse
-from resolvehub.app.modules.service_catalogue.service import create_category, list_categories
+from resolvehub.app.modules.service_catalogue.schemas import (
+    CategoryCreate,
+    CategoryResponse,
+    CategoryUpdate,
+)
+from resolvehub.app.modules.service_catalogue.service import (
+    create_category,
+    list_categories,
+    update_category,
+)
 
 router = APIRouter(prefix="/organisations/{organisation_id}/categories", tags=["Categories"])
 
@@ -37,3 +45,24 @@ async def categories_list(
         session, actor_id=principal.user.id, organisation_id=organisation_id
     )
     return [CategoryResponse.model_validate(item) for item in items]
+
+
+@router.patch("/{category_id}", response_model=CategoryResponse)
+async def categories_update(
+    organisation_id: UUID,
+    category_id: UUID,
+    payload: CategoryUpdate,
+    principal: CurrentPrincipal,
+    session: DbSession,
+) -> CategoryResponse:
+    category = await update_category(
+        session,
+        actor_id=principal.user.id,
+        organisation_id=organisation_id,
+        category_id=category_id,
+        name=payload.name,
+        description=payload.description,
+        default_priority=payload.default_priority,
+        is_active=payload.is_active,
+    )
+    return CategoryResponse.model_validate(category)

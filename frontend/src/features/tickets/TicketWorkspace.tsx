@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { List, Columns3 } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
 import { TicketDetail } from './TicketDetail'
+import { TicketKanbanView } from './TicketKanbanView'
+import { TicketDrawer } from './TicketDrawer'
 
 type Category = {
   id: string
@@ -30,45 +33,59 @@ type MembershipContext = {
   permissions: string[]
 }
 
+function readable(value: string): string {
+  return value.replaceAll('_', ' ').toLowerCase().replace(/^./, (l) => l.toUpperCase())
+}
+
 export function TicketWorkspace({ organisationId }: { organisationId: string }) {
   const { request } = useAuth()
   const queryClient = useQueryClient()
   const [setupError, setSetupError] = useState<string | null>(null)
   const [ticketError, setTicketError] = useState<string | null>(null)
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
+  const [drawerTicketId, setDrawerTicketId] = useState<string | null>(null)
   const [searchInput, setSearchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
+  const [displayMode, setDisplayMode] = useState<'list' | 'kanban'>('list')
+
   const membership = useQuery({
     queryKey: ['membership', organisationId],
     queryFn: () =>
       request<MembershipContext>(`/organisations/${organisationId}/membership/me`),
+    enabled: Boolean(organisationId),
   })
+
   const categories = useQuery({
     queryKey: ['categories', organisationId],
     queryFn: () => request<Category[]>(`/organisations/${organisationId}/categories`),
+    enabled: Boolean(organisationId),
   })
+
   const tickets = useInfiniteQuery({
     queryKey: ['tickets', organisationId, statusFilter, priorityFilter],
     initialPageParam: null as string | null,
     queryFn: ({ pageParam }) => {
-      const query = new URLSearchParams({ limit: '20' })
+      const query = new URLSearchParams({ limit: '50' })
       if (statusFilter) query.set('status', statusFilter)
       if (priorityFilter) query.set('priority', priorityFilter)
       if (pageParam) query.set('cursor', pageParam)
       return request<TicketPage>(`/organisations/${organisationId}/tickets?${query}`)
     },
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
+    enabled: Boolean(organisationId),
   })
+
   const search = useQuery({
     queryKey: ['ticket-search', organisationId, searchQuery],
     queryFn: () => {
-      const query = new URLSearchParams({ query: searchQuery, limit: '20' })
+      const query = new URLSearchParams({ query: searchQuery, limit: '50' })
       return request<TicketPage>(`/organisations/${organisationId}/search/tickets?${query}`)
     },
     enabled: searchQuery.length >= 2,
   })
+
   const serviceSetup = useMutation({
     mutationFn: async (payload: {
       departmentName: string
@@ -93,6 +110,7 @@ export function TicketWorkspace({ organisationId }: { organisationId: string }) 
     },
     onError: () => setSetupError('The service category could not be configured.'),
   })
+
   const createTicket = useMutation({
     mutationFn: (payload: {
       category_id: string
@@ -111,8 +129,11 @@ export function TicketWorkspace({ organisationId }: { organisationId: string }) 
     },
     onError: () => setTicketError('The request could not be submitted. Review it and try again.'),
   })
+
   const categoryItems = (categories.data ?? []).filter((category) => category.is_active)
-  const ticketItems = searchQuery ? (search.data?.items ?? []) : (tickets.data?.pages.flatMap((page) => page.items) ?? [])
+  const ticketItems = searchQuery
+    ? (search.data?.items ?? [])
+    : (tickets.data?.pages.flatMap((page) => page.items) ?? [])
 
   function submitServiceSetup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -152,6 +173,7 @@ export function TicketWorkspace({ organisationId }: { organisationId: string }) 
   if (categories.isPending || tickets.isPending || membership.isPending) {
     return <p className="section-message" role="status">Loading service requests…</p>
   }
+
   if (categories.isError || tickets.isError || membership.isError) {
     return <div className="form-error organisation-state" role="alert">Service requests could not be loaded.</div>
   }
@@ -206,140 +228,213 @@ export function TicketWorkspace({ organisationId }: { organisationId: string }) 
   const isStaff = membership.data.permissions.includes('ticket:read_all')
 
   return (
-    <section className="ticket-workspace" aria-labelledby="requests-title">
-      <div className="ticket-heading">
-        <div>
-          <p className="card-label">{isStaff ? membership.data.role_name : 'Requester workspace'}</p>
-          <h2 id="requests-title">{isStaff ? 'Agent queue' : 'Service requests'}</h2>
+    <section aria-labelledby="requests-title">
+      {/* Drawer Inspector */}
+      <TicketDrawer
+        isOpen={Boolean(drawerTicketId)}
+        organisationId={organisationId}
+        ticketId={drawerTicketId}
+        permissions={membership.data.permissions}
+        onClose={() => setDrawerTicketId(null)}
+      />
+
+      {/* Page Header */}
+      <div className="page-header-row">
+        <div className="page-header">
+          <h1 id="requests-title">{isStaff ? 'Agent queue' : 'Service Requests'}</h1>
+          <p className="page-subtitle">{isStaff ? 'Manage and triage incoming requests' : 'Submit and track your requests'}</p>
         </div>
-        <span>{ticketItems.length} loaded</span>
+        <div className="view-toggle">
+          <button
+            className={`view-toggle-btn ${displayMode === 'list' ? 'active' : ''}`}
+            type="button"
+            onClick={() => setDisplayMode('list')}
+          >
+            <List size={14} /> List
+          </button>
+          <button
+            className={`view-toggle-btn ${displayMode === 'kanban' ? 'active' : ''}`}
+            type="button"
+            onClick={() => setDisplayMode('kanban')}
+          >
+            <Columns3 size={14} /> Board
+          </button>
+        </div>
       </div>
 
-      <form className="ticket-search" role="search" onSubmit={submitSearch}>
-        <label>
-          <span className="sr-only">Search requests</span>
-          <input
-            type="search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search requests and public replies"
-            minLength={2}
-            maxLength={200}
-          />
-        </label>
-        <button className="quiet-button" type="submit">Search</button>
-        {searchQuery && (
-          <button
-            className="text-button"
-            type="button"
-            onClick={() => { setSearchInput(''); setSearchQuery('') }}
-          >
-            Clear search
-          </button>
-        )}
-      </form>
-      {search.isError && <div className="form-error search-error" role="alert">Search could not be completed.</div>}
+      {/* Toolbar */}
+      <div className="ticket-toolbar">
+        <form role="search" onSubmit={submitSearch} style={{ display: 'flex', gap: 8, flex: 1 }}>
+          <label style={{ display: 'flex', gap: 8, flex: 1, alignItems: 'center' }}>
+            <span className="sr-only">Search requests</span>
+            <input
+              className="ticket-search-input"
+              type="search"
+              aria-label="Search requests"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Search tickets…"
+              minLength={2}
+              maxLength={200}
+            />
+          </label>
+          <button className="btn-secondary btn-sm" type="submit">Search</button>
+          {searchQuery && (
+            <button
+              className="btn-ghost btn-sm"
+              type="button"
+              onClick={() => { setSearchInput(''); setSearchQuery('') }}
+            >
+              Clear
+            </button>
+          )}
+        </form>
+        {search.isError && <div className="form-error search-error" role="alert">Search could not be completed.</div>}
 
-      {isStaff && (
-        <div className="queue-filters" aria-label="Queue filters">
-          <label>
-            <span>Status</span>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+        {isStaff && (
+          <>
+            <select
+              className="filter-select"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
               <option value="">All statuses</option>
               {['SUBMITTED', 'TRIAGED', 'ASSIGNED', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'ESCALATED', 'RESOLVED', 'CLOSED', 'CANCELLED'].map((status) => (
                 <option key={status} value={status}>{status.replaceAll('_', ' ')}</option>
               ))}
             </select>
-          </label>
-          <label>
-            <span>Priority</span>
-            <select value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)}>
+            <select
+              className="filter-select"
+              value={priorityFilter}
+              onChange={(event) => setPriorityFilter(event.target.value)}
+            >
               <option value="">All priorities</option>
               {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((priority) => (
                 <option key={priority} value={priority}>{priority}</option>
               ))}
             </select>
-          </label>
+          </>
+        )}
+      </div>
+
+      {displayMode === 'kanban' ? (
+        <TicketKanbanView
+          organisationId={organisationId}
+          tickets={ticketItems}
+          onSelectTicket={(ticketId) => setSelectedTicketId(ticketId)}
+        />
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+          {/* Data Table */}
+          <div className="ticket-table-wrap">
+            {ticketItems.length === 0 ? (
+              <div className="empty-state">
+                <h3>No requests found</h3>
+                <p>Submitted requests will appear in this queue.</p>
+              </div>
+            ) : (
+              <table className="ticket-table">
+                <thead>
+                  <tr>
+                    <th>Ticket ID</th>
+                    <th>Title</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ticketItems.map((ticket) => (
+                    <tr key={ticket.id}>
+                      <td>
+                        <span className="ticket-number">{ticket.ticket_number}</span>
+                      </td>
+                      <td>
+                        <h3 className="ticket-title-heading">
+                          <button
+                            className="ticket-title-btn"
+                            type="button"
+                            onClick={() => setSelectedTicketId(ticket.id)}
+                          >
+                            {ticket.title}
+                          </button>
+                        </h3>
+                      </td>
+                      <td>
+                        <span className={`badge badge-status priority-${ticket.priority.toLowerCase()}`}>
+                          {ticket.priority}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge badge-status status-${ticket.status.toLowerCase()}`}>
+                          <span className="badge-dot" />
+                          {readable(ticket.status)}
+                        </span>
+                      </td>
+                      <td>
+                        <time dateTime={ticket.created_at}>
+                          {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(ticket.created_at))}
+                        </time>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {tickets.hasNextPage && (
+              <div style={{ padding: 16, textAlign: 'center' }}>
+                <button
+                  className="btn-secondary btn-sm"
+                  type="button"
+                  disabled={tickets.isFetchingNextPage}
+                  onClick={() => void tickets.fetchNextPage()}
+                >
+                  {tickets.isFetchingNextPage ? 'Loading…' : 'Load more requests'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Submit Form */}
+          <div className="card">
+            <form className="compact-form" onSubmit={submitTicket}>
+              <h3>Submit a request</h3>
+              <label>
+                <span>Category</span>
+                <select name="category_id" required defaultValue="">
+                  <option value="" disabled>Select a service</option>
+                  {categoryItems.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Title</span>
+                <input name="title" minLength={3} maxLength={200} required />
+              </label>
+              <label>
+                <span>Description</span>
+                <textarea name="description" minLength={3} maxLength={20_000} rows={5} required />
+              </label>
+              <label>
+                <span>Priority</span>
+                <select name="priority" defaultValue="">
+                  <option value="">Category default</option>
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="CRITICAL">Critical</option>
+                </select>
+              </label>
+              {ticketError && <div className="form-error" role="alert">{ticketError}</div>}
+              <button className="primary-button" type="submit" disabled={createTicket.isPending}>
+                {createTicket.isPending ? 'Submitting…' : 'Submit request'}
+                {!createTicket.isPending && <span aria-hidden="true">→</span>}
+              </button>
+            </form>
+          </div>
         </div>
       )}
-
-      <div className="ticket-layout">
-        <form className="ticket-form compact-form" onSubmit={submitTicket}>
-          <h3>Submit a request</h3>
-          <label>
-            <span>Category</span>
-            <select name="category_id" required defaultValue="">
-              <option value="" disabled>Select a service</option>
-              {categoryItems.map((category) => (
-                <option key={category.id} value={category.id}>{category.name}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>Title</span>
-            <input name="title" minLength={3} maxLength={200} required />
-          </label>
-          <label>
-            <span>Description</span>
-            <textarea name="description" minLength={3} maxLength={20_000} rows={5} required />
-          </label>
-          <label>
-            <span>Priority</span>
-            <select name="priority" defaultValue="">
-              <option value="">Category default</option>
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="CRITICAL">Critical</option>
-            </select>
-          </label>
-          {ticketError && <div className="form-error" role="alert">{ticketError}</div>}
-          <button className="primary-button" type="submit" disabled={createTicket.isPending}>
-            {createTicket.isPending ? 'Submitting…' : 'Submit request'}
-            {!createTicket.isPending && <span aria-hidden="true">→</span>}
-          </button>
-        </form>
-
-        <div className="ticket-list" aria-live="polite">
-          {ticketItems.length === 0 ? (
-            <div className="empty-tickets">
-              <h3>No requests yet</h3>
-              <p>Your submitted requests will appear here.</p>
-            </div>
-          ) : ticketItems.map((ticket) => (
-            <article className="ticket-card" key={ticket.id}>
-              <div>
-                <span className="ticket-number">{ticket.ticket_number}</span>
-                <span className={`priority-badge priority-${ticket.priority.toLowerCase()}`}>
-                  {ticket.priority}
-                </span>
-              </div>
-              <h3>
-                <button className="ticket-title-button" type="button" onClick={() => setSelectedTicketId(ticket.id)}>
-                  {ticket.title}
-                </button>
-              </h3>
-              <p>{ticket.description}</p>
-              <footer>
-                <span>{ticket.status.replaceAll('_', ' ')}</span>
-                <time dateTime={ticket.created_at}>
-                  {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(ticket.created_at))}
-                </time>
-              </footer>
-            </article>
-          ))}
-          {tickets.hasNextPage && (
-            <button
-              className="quiet-button load-more"
-              type="button"
-              disabled={tickets.isFetchingNextPage}
-              onClick={() => void tickets.fetchNextPage()}
-            >
-              {tickets.isFetchingNextPage ? 'Loading…' : 'Load more requests'}
-            </button>
-          )}
-        </div>
-      </div>
     </section>
   )
 }

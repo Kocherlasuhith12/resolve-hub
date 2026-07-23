@@ -84,3 +84,55 @@ async def list_categories(
         .limit(500)
     )
     return list(result)
+
+
+async def update_category(
+    session: AsyncSession,
+    *,
+    actor_id: UUID,
+    organisation_id: UUID,
+    category_id: UUID,
+    name: str | None = None,
+    description: str | None = None,
+    default_priority: TicketPriority | None = None,
+    is_active: bool | None = None,
+) -> ServiceCategory:
+    await require_permission(
+        session,
+        user_id=actor_id,
+        organisation_id=organisation_id,
+        permission="category:update",
+    )
+    category = await session.scalar(
+        select(ServiceCategory)
+        .where(
+            ServiceCategory.id == category_id,
+            ServiceCategory.organisation_id == organisation_id,
+        )
+        .with_for_update()
+    )
+    if category is None:
+        raise AppError("CATEGORY_NOT_FOUND", "Service category was not found.", 404)
+
+    if name is not None:
+        normalized_name = name.strip()
+        existing = await session.scalar(
+            select(ServiceCategory.id).where(
+                ServiceCategory.organisation_id == organisation_id,
+                ServiceCategory.name == normalized_name,
+                ServiceCategory.id != category_id,
+            )
+        )
+        if existing:
+            raise AppError("CATEGORY_EXISTS", "A category with this name already exists.", 409)
+        category.name = normalized_name
+
+    if description is not None:
+        category.description = description
+    if default_priority is not None:
+        category.default_priority = default_priority
+    if is_active is not None:
+        category.is_active = is_active
+
+    await session.commit()
+    return category

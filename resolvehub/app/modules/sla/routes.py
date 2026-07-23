@@ -9,6 +9,7 @@ from resolvehub.app.modules.sla.schemas import (
     HolidayCreate,
     PolicyCreate,
     PolicyResponse,
+    PolicyUpdate,
 )
 from resolvehub.app.modules.sla.service import (
     add_holiday,
@@ -16,6 +17,7 @@ from resolvehub.app.modules.sla.service import (
     create_policy,
     list_calendars,
     list_policies,
+    update_policy,
 )
 
 router = APIRouter(prefix="/organisations/{organisation_id}/sla", tags=["SLA"])
@@ -89,3 +91,21 @@ async def policies_list(
         session, actor_id=principal.user.id, organisation_id=organisation_id
     )
     return [PolicyResponse.model_validate(item) for item in items]
+
+
+@router.patch("/policies/{policy_id}", response_model=PolicyResponse)
+async def policies_update(
+    organisation_id: UUID,
+    policy_id: UUID,
+    payload: PolicyUpdate,
+    principal: CurrentPrincipal,
+    session: DbSession,
+) -> PolicyResponse:
+    item = await update_policy(
+        session,
+        actor_id=principal.user.id,
+        organisation_id=organisation_id,
+        policy_id=policy_id,
+        **payload.model_dump(exclude_unset=True),
+    )
+    return PolicyResponse.model_validate(item)

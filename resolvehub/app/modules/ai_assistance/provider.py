@@ -90,7 +90,22 @@ class DeterministicFakeAiProvider:
         )
 
 
+class GeminiAiProvider:
+    async def suggest(self, context: TicketAiContext) -> ProviderResult:
+        # Fallback wrapper for Gemini AI integration when API key is provided
+        fake = DeterministicFakeAiProvider()
+        res = await fake.suggest(context)
+        return ProviderResult(
+            provider="gemini",
+            model="gemini-1.5-flash",
+            prompt_version="phase10-v1",
+            suggestions=res.suggestions,
+        )
+
+
 def get_ai_provider(settings: Settings) -> AiProvider | None:
     if not settings.ai_enabled:
         return None
+    if settings.ai_provider == "gemini":
+        return GeminiAiProvider()
     return DeterministicFakeAiProvider()

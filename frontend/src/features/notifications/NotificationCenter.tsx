@@ -117,11 +117,11 @@ export function NotificationCenter({ organisationId }: { organisationId: string 
   const unreadCount = items.filter((item) => !item.read_at).length
 
   return (
-    <section className="notification-center" aria-labelledby="notifications-title">
+    <section aria-labelledby="notifications-title">
       <div className="notification-heading">
-        <div>
-          <p className="card-label">Personal updates</p>
-          <h2 id="notifications-title">Notifications</h2>
+        <div className="page-header">
+          <h1 id="notifications-title">Notifications</h1>
+          <p className="page-subtitle">Personal ticket and SLA updates</p>
         </div>
         <div className="notification-summary">
           <strong>{unreadCount} unread</strong>
@@ -153,7 +153,7 @@ export function NotificationCenter({ organisationId }: { organisationId: string 
               <p>{item.body}</p>
               {!item.read_at && (
                 <button
-                  className="text-button"
+                  className="btn-ghost btn-sm"
                   type="button"
                   disabled={markRead.isPending}
                   onClick={() => markRead.mutate(item.id)}
@@ -167,7 +167,7 @@ export function NotificationCenter({ organisationId }: { organisationId: string 
       )}
       {notifications.hasNextPage && (
         <button
-          className="quiet-button load-more"
+          className="btn-secondary load-more"
           type="button"
           disabled={notifications.isFetchingNextPage}
           onClick={() => void notifications.fetchNextPage()}

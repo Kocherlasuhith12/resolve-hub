@@ -24,6 +24,8 @@ type ErrorEnvelope = {
     code?: string
     message?: string
   }
+  detail?: string
+  message?: string
 }
 
 export class ApiError extends Error {
@@ -44,25 +46,39 @@ async function parseError(response: Response): Promise<ApiError> {
   } catch {
     // A proxy or network edge can return a non-JSON error response.
   }
-  return new ApiError(
-    body.error?.message ?? 'ResolveHub could not complete the request.',
-    response.status,
-    body.error?.code ?? 'REQUEST_FAILED',
-  )
+  const message =
+    body.error?.message ||
+    (typeof body.detail === 'string' ? body.detail : null) ||
+    body.message ||
+    'ResolveHub could not complete the request.'
+  const code = body.error?.code || 'REQUEST_FAILED'
+  return new ApiError(message, response.status, code)
 }
 
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`/api/v1${path}`, {
-    ...init,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...init.headers,
-    },
-  })
-  if (!response.ok) throw await parseError(response)
-  if (response.status === 204) return undefined as T
-  return (await response.json()) as T
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 15000)
+  try {
+    const response = await fetch(`/api/v1${path}`, {
+      ...init,
+      signal: controller.signal,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...init.headers,
+      },
+    })
+    if (!response.ok) throw await parseError(response)
+    if (response.status === 204) return undefined as T
+    return (await response.json()) as T
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new ApiError('The server did not respond in time. Check your connection and try again.', 504, 'TIMEOUT')
+    }
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 export function readCookie(name: string): string | null {

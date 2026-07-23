@@ -82,3 +82,11 @@ class RoleResponse(BaseModel):
     id: UUID
     name: str
     permissions: list[str]
+
+
+class MemberRoleUpdate(BaseModel):
+    role_id: UUID
+
+
+class MemberStatusUpdate(BaseModel):
+    is_active: bool

@@ -24,3 +24,10 @@ class CategoryResponse(BaseModel):
     description: str | None
     default_priority: TicketPriority
     is_active: bool
+
+
+class CategoryUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=2, max_length=120)
+    description: str | None = Field(default=None, max_length=500)
+    default_priority: TicketPriority | None = None
+    is_active: bool | None = None

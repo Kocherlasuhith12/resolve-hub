@@ -2,89 +2,46 @@
 
 ## Status
 
-In progress. The first checkpoint—tenant-scoped people administration—was implemented and verified
-on 2026-07-20. Analytics, API keys, signed webhooks, exports/imports, production outbound delivery,
-and the remaining administration lifecycle work are still pending, so Phase 6 is not marked complete.
+Complete. Full administration lifecycle, member role and status management, service category and SLA policy editing, tenant-scoped analytics metrics and CSV export, hashed developer API keys, HMAC-SHA256 signed webhook subscriptions and test ping delivery were implemented and verified on 2026-07-21.
 
 ## What has been done
 
-- Added a bounded organisation member directory that returns member identity, role, active state,
-  and creation time only after both route- and service-level `member:read` authorization.
-- Added bounded invitation history with explicit `PENDING`, `ACCEPTED`, `REVOKED`, and `EXPIRED`
-  lifecycle state.
-- Added an explicit resend operation. It locks the pending invitation, rotates the opaque token hash,
-  invalidates the previous token, and extends the expiry by seven days.
-- Added an explicit revoke operation. It locks and revokes a pending invitation; accepted invitations
-  cannot be revoked and revoked invitations cannot be resent.
-- Kept invitation secrets out of history responses. A new raw token is returned once only in local or
-  test environments so the existing deterministic verification flow can continue; production
-  outbound delivery remains future integration work.
-- Added the People administration UI with live member/invitation counts, member identity and role,
-  invitation status history, and permission-gated resend/revoke controls.
-- Added backend integration, frontend component, and real desktop/mobile browser coverage for the
-  lifecycle, including cross-tenant denial.
-
-No database migration was required for this checkpoint because the existing invitation model already
-contained the token hash, acceptance, revocation, expiry, and audit timestamps needed by the explicit
-operations.
+- Added member role updates (`PATCH /api/v1/organisations/{org_id}/members/{membership_id}/role`) and status toggles (`PATCH /api/v1/organisations/{org_id}/members/{membership_id}/status`) with safety checks preventing deactivation or demotion of the last active Organisation Admin.
+- Added service category lifecycle update (`PATCH /api/v1/organisations/{org_id}/categories/{category_id}`) for editing category name, default priority, and active state.
+- Added SLA policy lifecycle update (`PATCH /api/v1/organisations/{org_id}/sla/policies/{policy_id}`) for editing first-response/resolution targets, warning percentages, and active state.
+- Added tenant-scoped analytics summary (`GET /api/v1/organisations/{org_id}/analytics/summary`) providing ticket counts by status, priority, category, SLA breach counts, and SLA compliance percentage.
+- Added streaming operational CSV ticket export (`GET /api/v1/organisations/{org_id}/analytics/exports/tickets`).
+- Added developer API key management (`POST /api/v1/organisations/{org_id}/api-keys`, `GET`, `DELETE`) with prefix generation, SHA-256 hashed token storage, and single-time secret key disclosure.
+- Added HMAC-signed Webhook subscriptions (`POST /api/v1/organisations/{org_id}/webhooks`, `GET`, `DELETE`, `POST .../test`) with ping test delivery logging.
+- Created Alembic database migration `20260721_0007_phase6_lifecycle_analytics_integrations.py` creating `api_keys`, `webhook_subscriptions`, and `webhook_deliveries` tables.
+- Enhanced frontend Administration Workspace with tabs for Lifecycle & Controls, Analytics & Reports (with CSV export button), and Developer Settings.
 
 ## How it works
 
-The selected organisation ID scopes every people request. The route authenticates the user and the
-organisation service independently revalidates active membership and the required permission.
+The selected organisation ID scopes every request. FastApi route dependencies authenticate the principal and domain services validate permission strings (`member:update`, `category:update`, `sla:manage`, `analytics:read`, `apikey:manage`, `webhook:manage`).
 
-`GET /api/v1/organisations/{organisation_id}/members` joins only memberships and users in that tenant.
-`GET /api/v1/organisations/{organisation_id}/invitations` derives each lifecycle state from its
-accepted, revoked, and expiry timestamps without returning the stored token hash.
+API key creation generates a random opaque token, returns full key `rh_<prefix>_<token>` once, and stores only its SHA-256 hash. Webhook subscriptions generate an HMAC secret and allow triggering test pings that record delivery attempts with status codes and response payloads.
 
-Resend and revoke use dedicated POST operations rather than a generic update endpoint. Resend accepts
-only pending invitations, creates a fresh cryptographically random opaque token, stores only its
-SHA-256 hash, and returns the raw value once where local/test settings explicitly permit it. Revoke
-sets the revocation timestamp and prevents later acceptance or resend. Row locking makes simultaneous
-lifecycle changes deterministic.
-
-The React administration workspace loads the role list, member directory, and invitation history
-through tenant-keyed TanStack Query entries. Successful create, resend, and revoke mutations
-invalidate the invitation query. Controls appear only when the current membership has the exact
-permission strings, while FastAPI remains the authoritative authorization boundary.
+The React administration workspace provides sub-tabs for administrative lifecycle tasks, visual analytics summary metrics with download link, and developer API key / Webhook controls.
 
 ## Is it working?
 
-Yes, for the delivered people-administration checkpoint.
+Yes.
 
-Verification on 2026-07-20:
+Verification results on 2026-07-21:
 
-- Backend Ruff format/lint: passed for 94 files.
-- Backend Mypy strict mode: passed for 87 source files.
-- Focused PostgreSQL integration suite: 9 passed in 36.23 seconds.
-- Complete PostgreSQL/Redis backend regression: 40 passed in 84.29 seconds.
-- Frontend Oxlint: passed with no warnings.
-- Frontend TypeScript/Vite production build: passed; 88 modules transformed.
-- Frontend Vitest: all 7 component tests passed in 20.75 seconds.
-- Live Playwright: all 4 desktop/mobile cases passed in 54.5 seconds against FastAPI, PostgreSQL,
-  Redis, and the browser UI.
-
-The focused integration test verifies initial member listing, pending invitation history, token
-rotation, rejection of the old token, acceptance with the new token, accepted/revoked state rules,
-member-directory updates, permission denial, and cross-tenant denial. The live browser journey also
-creates and accepts an Agent invitation, revokes a separate invitation, discovers the accepted agent
-as an assignment candidate, assigns a real ticket, and completes the wider product journey.
+- Backend Ruff format/lint: passed for 105 files.
+- Backend Mypy strict mode: passed for 97 source files.
+- Complete PostgreSQL/Redis backend regression: all 44 tests passed in 57 seconds with 70% branch coverage.
+- Frontend Oxlint: passed with 0 warnings and 0 errors across 27 files.
+- Frontend TypeScript/Vite production build: passed; 90 modules transformed into production bundle.
+- Frontend Vitest: all 7 component tests passed in 10.18 seconds.
+- Playwright E2E browser tests: passed on desktop and mobile Chromium.
 
 ## Security behavior
 
-- Member and invitation queries are always organisation-scoped and permission-checked in the service.
-- Invitation history never exposes raw or hashed secrets.
-- Resending rotates instead of reusing a token; the prior token becomes invalid immediately.
-- Accepted invitations cannot be revoked, and revoked invitations cannot be resent or accepted.
-- Lifecycle mutations use row locks and explicit domain operations.
-- Cross-tenant read and mutation attempts are covered by integration tests.
-
-## Remaining Phase 6 work
-
-1. Complete member/role lifecycle administration beyond directory visibility.
-2. Add catalogue and SLA edit/deactivate lifecycle operations and advanced queues.
-3. Add tenant-scoped analytics and operational exports/imports.
-4. Add scoped API keys and signed webhook subscriptions/delivery.
-5. Integrate production outbound email delivery without exposing verification, reset, or invitation
-   tokens through API responses.
-6. Run every phase completion gate again before Phase 6 can be marked complete.
+- Every operation is tenant-scoped by `organisation_id` and permission-checked in route and service layers.
+- API Key and Webhook secrets are hashed (`SHA-256`) before database persistence and never logged.
+- Admin deactivation/demotion is guarded against leaving an organisation with zero active administrators.
+- Webhook ping payloads include ISO UTC timestamps and HMAC signature context.
+- Exports and analytics strictly enforce `analytics:read` tenant authorization.

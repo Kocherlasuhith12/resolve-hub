@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr, field_validator, model_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,6 +27,44 @@ class Settings(BaseSettings):
     ai_provider: Literal["fake"] = "fake"
     ai_confidence_threshold: float = Field(default=0.65, ge=0, le=1)
     cors_origins: list[str] = []
+
+    storage_provider: Literal["local", "s3"] = "local"
+    storage_local_dir: str = "storage_data"
+    s3_endpoint_url: str | None = None
+    s3_bucket: str = "resolvehub-attachments"
+    s3_access_key: SecretStr = SecretStr("minioadmin")
+    s3_secret_key: SecretStr = SecretStr("minioadmin")
+    s3_region: str = "us-east-1"
+
+    serve_frontend: bool = False
+    prometheus_enabled: bool = True
+
+    stripe_secret_key: SecretStr = Field(
+        default=SecretStr(""),
+        validation_alias=AliasChoices("RH_STRIPE_SECRET_KEY", "STRIPE_SECRET_KEY"),
+    )
+    stripe_publishable_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("RH_STRIPE_PUBLISHABLE_KEY", "STRIPE_PUBLISHABLE_KEY"),
+    )
+    stripe_webhook_secret: SecretStr = Field(
+        default=SecretStr(""),
+        validation_alias=AliasChoices("RH_STRIPE_WEBHOOK_SECRET", "STRIPE_WEBHOOK_SECRET"),
+    )
+    stripe_price_id_starter: str = Field(
+        default="price_starter_free",
+        validation_alias=AliasChoices("RH_STRIPE_PRICE_ID_STARTER", "STRIPE_PRICE_ID_STARTER"),
+    )
+    stripe_price_id_pro: str = Field(
+        default="price_pro_monthly_49",
+        validation_alias=AliasChoices("RH_STRIPE_PRICE_ID_PRO", "STRIPE_PRICE_ID_PRO"),
+    )
+    stripe_price_id_enterprise: str = Field(
+        default="price_enterprise_custom",
+        validation_alias=AliasChoices(
+            "RH_STRIPE_PRICE_ID_ENTERPRISE", "STRIPE_PRICE_ID_ENTERPRISE"
+        ),
+    )
 
     @field_validator("jwt_secret")
     @classmethod

@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, MetaData, Uuid, func
+from sqlalchemy import DateTime, MetaData, Uuid, func, text
 from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -35,6 +35,16 @@ class TimestampMixin:
 settings = get_settings()
 engine = create_async_engine(settings.database_url, pool_pre_ping=True)
 async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+
+async def set_session_organisation_id(
+    session: AsyncSession, organisation_id: UUID | str | None
+) -> None:
+    if organisation_id is not None:
+        await session.execute(
+            text("SELECT set_config('app.current_organisation_id', :org_id, true)"),
+            {"org_id": str(organisation_id)},
+        )
 
 
 async def get_db() -> AsyncIterator[AsyncSession]:

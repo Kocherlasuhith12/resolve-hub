@@ -82,13 +82,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus('unauthenticated')
       return
     }
+
+    // Timeout fallback: if backend doesn't respond within 10s, treat as unauthenticated
+    const timeout = setTimeout(() => {
+      setStatus('unauthenticated')
+    }, 10000)
+
     refreshAccessToken()
       .then(loadUser)
       .then((currentUser) => {
+        clearTimeout(timeout)
         setUser(currentUser)
         setStatus('authenticated')
       })
-      .catch(clearSession)
+      .catch(() => {
+        clearTimeout(timeout)
+        clearSession()
+      })
+
+    return () => clearTimeout(timeout)
   }, [clearSession, refreshAccessToken])
 
   const login = useCallback(

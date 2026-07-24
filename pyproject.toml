@@ -58,7 +58,7 @@ ignore = ["B008", "S311", "E501", "S105"]
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
-exclude = ["migrations"]
+exclude = ["migrations", "resolvehub/scripts"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

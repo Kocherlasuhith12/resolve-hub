@@ -14,6 +14,15 @@
 [![Temporal](https://img.shields.io/badge/Temporal-SLA%20Workflows-000000?logo=temporal&logoColor=white)](https://temporal.io/)
 [![License](https://img.shields.io/badge/License-See%20Docs-lightgrey)](docs/progress.md)
 
+### 🚀 Live Production Deployment
+
+| Service | Live URL | Status |
+| :--- | :--- | :---: |
+| ⚛️ **Live Web Application (Frontend)** | [**resolvehub-frontend-suhith.onrender.com**](https://resolvehub-frontend-suhith.onrender.com) | **`LIVE`** 🟢 |
+| 🐍 **Live REST API (FastAPI Backend)** | [**resolvehub-api-suhith.onrender.com**](https://resolvehub-api-suhith.onrender.com) | **`LIVE`** 🟢 |
+| 📚 **Live API Swagger Documentation** | [**resolvehub-api-suhith.onrender.com/docs**](https://resolvehub-api-suhith.onrender.com/docs) | **`LIVE`** 🟢 |
+| 💚 **Live Backend Health Check** | [**resolvehub-api-suhith.onrender.com/health/live**](https://resolvehub-api-suhith.onrender.com/health/live) | **`LIVE`** 🟢 |
+
 [Overview](#-overview) • [Architecture](#-system-architecture) • [Features](#-key-features) • [Tech Stack](#-technology-stack) • [Setup](#-local-setup--installation) • [Testing](#-quality--verification-suite) • [Roadmap](#-roadmap--delivery-status)
 
 </div>

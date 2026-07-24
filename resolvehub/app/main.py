@@ -83,7 +83,7 @@ async def security_headers_and_metrics_middleware(request: Request, call_next: A
             "default-src 'self'; script-src 'self' 'unsafe-inline'; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; "
-            "connect-src 'self' ws: wss:;"
+            "connect-src 'self' https: ws: wss:;"
         )
     return response
 
@@ -91,6 +91,7 @@ async def security_headers_and_metrics_middleware(request: Request, call_next: A
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
+    allow_origin_regex=r"https://.*\.onrender\.com|http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=[

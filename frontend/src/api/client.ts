@@ -58,8 +58,9 @@ async function parseError(response: Response): Promise<ApiError> {
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 15000)
+  const baseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
   try {
-    const response = await fetch(`/api/v1${path}`, {
+    const response = await fetch(`${baseUrl}/api/v1${path}`, {
       ...init,
       signal: controller.signal,
       credentials: 'include',

@@ -15,7 +15,7 @@ async def list_assets(
     session: DbSession,
     category: str | None = None,
     search: str | None = None,
-):
+) -> list[AssetResponse]:
     return await AssetService.list_assets(session, organisation_id, category, search)
 
 
@@ -24,7 +24,7 @@ async def create_asset(
     organisation_id: UUID,
     payload: AssetCreate,
     session: DbSession,
-):
+) -> AssetResponse:
     return await AssetService.create_asset(session, organisation_id, payload)
 
 
@@ -34,7 +34,7 @@ async def update_asset(
     asset_id: UUID,
     payload: AssetUpdate,
     session: DbSession,
-):
+) -> AssetResponse:
     updated = await AssetService.update_asset(session, organisation_id, asset_id, payload)
     if not updated:
         raise HTTPException(status_code=404, detail="Asset not found")

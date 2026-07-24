@@ -14,7 +14,7 @@ async def list_problems(
     organisation_id: UUID,
     session: DbSession,
     search: str | None = None,
-):
+) -> list[ProblemResponse]:
     return await ProblemService.list_problems(session, organisation_id, search)
 
 
@@ -23,7 +23,7 @@ async def create_problem(
     organisation_id: UUID,
     payload: ProblemCreate,
     session: DbSession,
-):
+) -> ProblemResponse:
     return await ProblemService.create_problem(session, organisation_id, payload)
 
 
@@ -33,7 +33,7 @@ async def update_problem(
     problem_id: UUID,
     payload: ProblemUpdate,
     session: DbSession,
-):
+) -> ProblemResponse:
     updated = await ProblemService.update_problem(session, organisation_id, problem_id, payload)
     if not updated:
         raise HTTPException(status_code=404, detail="Problem not found")

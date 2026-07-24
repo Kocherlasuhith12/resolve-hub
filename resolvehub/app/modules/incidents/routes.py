@@ -18,7 +18,7 @@ async def list_incidents(
     organisation_id: UUID,
     session: DbSession,
     severity: str | None = None,
-):
+) -> list[IncidentResponse]:
     return await IncidentService.list_incidents(session, organisation_id, severity)
 
 
@@ -27,7 +27,7 @@ async def create_incident(
     organisation_id: UUID,
     payload: IncidentCreate,
     session: DbSession,
-):
+) -> IncidentResponse:
     return await IncidentService.create_incident(session, organisation_id, payload)
 
 
@@ -37,7 +37,7 @@ async def update_incident(
     incident_id: UUID,
     payload: IncidentUpdate,
     session: DbSession,
-):
+) -> IncidentResponse:
     updated = await IncidentService.update_incident(session, organisation_id, incident_id, payload)
     if not updated:
         raise HTTPException(status_code=404, detail="Incident not found")

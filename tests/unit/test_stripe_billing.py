@@ -8,7 +8,7 @@ from resolvehub.app.modules.billing.service import StripeBillingService
 
 
 @pytest.mark.asyncio
-async def test_get_or_create_subscription_record():
+async def test_get_or_create_subscription_record() -> None:
     org_id = uuid4()
     mock_session = AsyncMock()
     mock_result = MagicMock()
@@ -23,7 +23,7 @@ async def test_get_or_create_subscription_record():
 
 
 @pytest.mark.asyncio
-async def test_get_subscription_details():
+async def test_get_subscription_details() -> None:
     org_id = uuid4()
     mock_session = AsyncMock()
     existing_sub = Subscription(
@@ -48,7 +48,7 @@ async def test_get_subscription_details():
 
 
 @pytest.mark.asyncio
-async def test_cancel_and_resume_subscription():
+async def test_cancel_and_resume_subscription() -> None:
     org_id = uuid4()
     mock_session = AsyncMock()
     existing_sub = Subscription(
@@ -70,7 +70,7 @@ async def test_cancel_and_resume_subscription():
 
 @pytest.mark.asyncio
 @patch("stripe.checkout.Session.create")
-async def test_create_checkout_session(mock_checkout_create):
+async def test_create_checkout_session(mock_checkout_create: MagicMock) -> None:
     mock_session_obj = MagicMock()
     mock_session_obj.url = "https://checkout.stripe.com/pay/cs_test_123"
     mock_session_obj.id = "cs_test_123"
@@ -95,7 +95,7 @@ async def test_create_checkout_session(mock_checkout_create):
 
 @pytest.mark.asyncio
 @patch("stripe.billing_portal.Session.create")
-async def test_create_portal_session(mock_portal_create):
+async def test_create_portal_session(mock_portal_create: MagicMock) -> None:
     mock_portal_obj = MagicMock()
     mock_portal_obj.url = "https://billing.stripe.com/session/test_123"
     mock_portal_create.return_value = mock_portal_obj
@@ -117,14 +117,14 @@ async def test_create_portal_session(mock_portal_create):
 
 
 @pytest.mark.asyncio
-async def test_webhook_handler_unauthenticated():
+async def test_webhook_handler_unauthenticated() -> None:
     mock_session = AsyncMock()
     res = await StripeBillingService.handle_webhook(mock_session, b"{}", None)
     assert res["status"] in ("received", "error", "success")
 
 
 @pytest.mark.asyncio
-async def test_downgrade_to_starter():
+async def test_downgrade_to_starter() -> None:
     org_id = uuid4()
     mock_session = AsyncMock()
     existing_sub = Subscription(
@@ -141,7 +141,7 @@ async def test_downgrade_to_starter():
 
 
 @pytest.mark.asyncio
-async def test_contact_sales():
+async def test_contact_sales() -> None:
     res = await StripeBillingService.contact_sales(
         company_name="Acme",
         full_name="Alice Admin",
@@ -153,7 +153,7 @@ async def test_contact_sales():
     assert res["status"] == "success"
 
 
-def test_validate_coupon():
+def test_validate_coupon() -> None:
     valid, pct, msg = StripeBillingService.validate_coupon("RESOLVE20")
     assert valid is True
     assert pct == 20.0

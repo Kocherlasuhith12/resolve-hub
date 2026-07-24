@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from resolvehub.app.modules.settings.schemas import (
@@ -6,7 +7,7 @@ from resolvehub.app.modules.settings.schemas import (
 )
 
 # In-memory thread-safe user appearance settings registry
-_USER_SETTINGS_STORE: dict[UUID, dict] = {}
+_USER_SETTINGS_STORE: dict[UUID, dict[str, Any]] = {}
 
 DEFAULT_APPEARANCE_SETTINGS = {
     "theme": "light",

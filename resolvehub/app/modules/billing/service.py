@@ -350,7 +350,7 @@ class StripeBillingService:
         event = None
         if webhook_secret and sig_header:
             try:
-                event = stripe.Webhook.construct_event(payload_bytes, sig_header, webhook_secret)
+                event = stripe.Webhook.construct_event(payload_bytes, sig_header, webhook_secret)  # type: ignore[no-untyped-call]
             except Exception as exc:
                 logger.error("stripe_webhook_signature_verification_failed", error=str(exc))
                 return {"status": "error", "message": "Invalid signature"}
@@ -358,25 +358,10 @@ class StripeBillingService:
         if not event:
             return {"status": "received", "message": "No secret configured"}
 
-        event_type = event.get("type", "")
-        event_data = event.get("data", {}).get("object", {})
+        event_type = event["type"]
+        event_data = event["data"]["object"]
 
-        if event_type == "checkout.session.completed":
-            org_id_str = event_data.get("metadata", {}).get("organisation_id")
-            sub_id = event_data.get("subscription")
-            cust_id = event_data.get("customer")
-            if org_id_str:
-                org_uuid = UUID(org_id_str)
-                sub = await StripeBillingService.get_or_create_subscription_record(
-                    session, org_uuid
-                )
-                sub.stripe_customer_id = cust_id or sub.stripe_customer_id
-                sub.stripe_subscription_id = sub_id or sub.stripe_subscription_id
-                sub.plan_name = "Professional Enterprise"
-                sub.status = "active"
-                await session.commit()
-
-        elif event_type in ("customer.subscription.created", "customer.subscription.updated"):
+        if event_type in ("customer.subscription.updated", "customer.subscription.deleted"):
             cust_id = event_data.get("customer")
             sub_id = event_data.get("id")
             sub_status = event_data.get("status", "active")
@@ -385,11 +370,11 @@ class StripeBillingService:
             if cust_id:
                 query = select(Subscription).where(Subscription.stripe_customer_id == cust_id)
                 result = await session.execute(query)
-                sub = result.scalar_one_or_none()
-                if sub:
-                    sub.stripe_subscription_id = sub_id
-                    sub.status = sub_status
-                    sub.cancel_at_period_end = cancel_at_period_end
+                sub_matched = result.scalar_one_or_none()
+                if sub_matched:
+                    sub_matched.stripe_subscription_id = sub_id
+                    sub_matched.status = sub_status
+                    sub_matched.cancel_at_period_end = cancel_at_period_end
                     await session.commit()
 
         elif event_type == "invoice.paid":
@@ -402,11 +387,11 @@ class StripeBillingService:
             if cust_id:
                 query = select(Subscription).where(Subscription.stripe_customer_id == cust_id)
                 result = await session.execute(query)
-                sub = result.scalar_one_or_none()
-                if sub:
+                sub_matched = result.scalar_one_or_none()
+                if sub_matched:
                     now = datetime.now(UTC)
                     inv_record = Invoice(
-                        organisation_id=sub.organisation_id,
+                        organisation_id=sub_matched.organisation_id,
                         stripe_invoice_id=inv_id,
                         invoice_number=number or f"INV-{now.strftime('%Y-%m')}",
                         amount=amount_paid,

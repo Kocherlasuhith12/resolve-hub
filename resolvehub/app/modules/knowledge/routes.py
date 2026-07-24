@@ -19,7 +19,7 @@ async def list_articles(
     session: DbSession,
     category: str | None = None,
     search: str | None = None,
-):
+) -> list[ArticleResponse]:
     return await KnowledgeService.list_articles(session, organisation_id, category, search)
 
 
@@ -28,7 +28,7 @@ async def get_article(
     organisation_id: UUID,
     article_id: UUID,
     session: DbSession,
-):
+) -> ArticleResponse:
     article = await KnowledgeService.get_article(session, organisation_id, article_id)
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
@@ -40,7 +40,7 @@ async def create_article(
     organisation_id: UUID,
     payload: ArticleCreate,
     session: DbSession,
-):
+) -> ArticleResponse:
     return await KnowledgeService.create_article(session, organisation_id, payload)
 
 
@@ -50,7 +50,7 @@ async def rate_article(
     article_id: UUID,
     payload: ArticleRateRequest,
     session: DbSession,
-):
+) -> ArticleResponse:
     rated = await KnowledgeService.rate_article(
         session, organisation_id, article_id, payload.helpful
     )

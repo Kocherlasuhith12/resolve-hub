@@ -13,7 +13,7 @@ router = APIRouter(prefix="/organisations/{organisation_id}/changes", tags=["cha
 async def list_changes(
     organisation_id: UUID,
     session: DbSession,
-):
+) -> list[ChangeResponse]:
     return await ChangeService.list_changes(session, organisation_id)
 
 
@@ -22,7 +22,7 @@ async def create_change(
     organisation_id: UUID,
     payload: ChangeCreate,
     session: DbSession,
-):
+) -> ChangeResponse:
     return await ChangeService.create_change(session, organisation_id, payload)
 
 
@@ -32,7 +32,7 @@ async def update_change(
     change_id: UUID,
     payload: ChangeUpdate,
     session: DbSession,
-):
+) -> ChangeResponse:
     updated = await ChangeService.update_change(session, organisation_id, change_id, payload)
     if not updated:
         raise HTTPException(status_code=404, detail="Change request not found")

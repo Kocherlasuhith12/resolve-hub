@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     browser_cookie_secure: bool = False
     email_verification_ttl_hours: int = Field(default=24, ge=1, le=72)
     ai_enabled: bool = False
-    ai_provider: Literal["fake"] = "fake"
+    ai_provider: Literal["fake", "gemini"] = "gemini"
     ai_confidence_threshold: float = Field(default=0.65, ge=0, le=1)
     cors_origins: list[str] = []
 

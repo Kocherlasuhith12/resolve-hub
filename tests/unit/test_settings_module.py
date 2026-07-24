@@ -8,7 +8,7 @@ from resolvehub.app.modules.settings.service import (
 )
 
 
-def test_appearance_settings_default():
+def test_appearance_settings_default() -> None:
     user_id = uuid4()
     settings = get_user_appearance_settings(user_id)
     assert settings.theme == "light"
@@ -19,7 +19,7 @@ def test_appearance_settings_default():
     assert settings.enable_glassmorphism is True
 
 
-def test_appearance_settings_update():
+def test_appearance_settings_update() -> None:
     user_id = uuid4()
     update_user_appearance_settings(
         user_id,
@@ -40,7 +40,7 @@ def test_appearance_settings_update():
     assert settings.enable_animations is False
 
 
-def test_appearance_settings_reset():
+def test_appearance_settings_reset() -> None:
     user_id = uuid4()
     update_user_appearance_settings(
         user_id,

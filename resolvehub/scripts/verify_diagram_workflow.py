@@ -7,8 +7,8 @@ and Analytics endpoint against the live production server.
 
 import asyncio
 from uuid import uuid4
-import httpx
 
+import httpx
 
 LIVE_API_BASE = "https://resolvehub-api-suhith.onrender.com/api/v1"
 TEST_EMAIL = "diagram-verifier@resolvehub.dev"
@@ -321,7 +321,7 @@ async def run_full_diagram_verification():
         )
         assert analytics_resp.status_code == 200, f"Analytics failed: {analytics_resp.text}"
         analytics_data = analytics_resp.json()
-        print(f"   ✓ Analytics Summary Data Fetched (Status 200)")
+        print("   ✓ Analytics Summary Data Fetched (Status 200)")
         print(f"      • Total Tickets:       {analytics_data['total_tickets']}")
         print(f"      • Open Tickets:        {analytics_data['open_tickets']}")
         print(f"      • Resolved Tickets:    {analytics_data['resolved_tickets']}")

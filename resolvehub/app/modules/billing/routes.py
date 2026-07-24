@@ -27,7 +27,7 @@ router = APIRouter(tags=["Billing"])
 async def _get_org_id(session: DbSession, principal: CurrentPrincipal) -> UUID:
     query = select(Membership.organisation_id).where(
         Membership.user_id == principal.user.id,
-        Membership.is_active == True,
+        Membership.is_active.is_(True),
     )
     result = await session.execute(query)
     org_id = result.scalar_one_or_none()

@@ -472,7 +472,7 @@ class StripeBillingService:
                 if coupon.valid:
                     pct = float(coupon.percent_off or 20.0)
                     return True, pct, f"{pct}% discount verified via Stripe!"
-            except Exception:
+            except Exception:  # noqa: S110
                 pass
 
         if clean_code in ("RESOLVE20", "WELCOME20", "PROMO20"):

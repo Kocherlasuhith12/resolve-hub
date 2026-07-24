@@ -169,7 +169,7 @@ async def ready(
         storage = get_storage_provider(app_settings)
         await storage.exists("health_check_test_key")
         checks["storage"] = "ok"
-    except Exception as exc:
+    except Exception:
         checks["storage"] = "ok"
 
     ready_status = "ok" if all(v == "ok" for v in checks.values()) else "degraded"

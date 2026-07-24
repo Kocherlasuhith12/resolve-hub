@@ -32,14 +32,14 @@ class RefreshRequest(BaseModel):
 class TokenPair(BaseModel):
     access_token: str
     refresh_token: str
-    token_type: str = "bearer"  # noqa: S105 - OAuth token type, not a credential.
+    token_type: str = "bearer"
     expires_in: int
 
 
 class BrowserTokenResponse(BaseModel):
     access_token: str
     csrf_token: str
-    token_type: str = "bearer"  # noqa: S105 - OAuth token type, not a credential.
+    token_type: str = "bearer"
     expires_in: int
 
 

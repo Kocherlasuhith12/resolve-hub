@@ -3,8 +3,8 @@
 
 import asyncio
 from uuid import uuid4
-import httpx
 
+import httpx
 
 LIVE_API_BASE = "https://resolvehub-api-suhith.onrender.com/api/v1"
 TEST_EMAIL = "test-agent-sravan@resolvehub.dev"
@@ -131,7 +131,7 @@ async def run_e2e_ticket_flow():
         ticket = ticket_resp.json()
         ticket_id = ticket["id"]
         ticket_num = ticket["ticket_number"]
-        print(f"   ✅ TICKET CREATED SUCCESSFULLY!")
+        print("   ✅ TICKET CREATED SUCCESSFULLY!")
         print(f"      • Ticket Number: {ticket_num}")
         print(f"      • Ticket ID:     {ticket_id}")
         print(f"      • Status:        {ticket['status']}")
@@ -163,7 +163,7 @@ async def run_e2e_ticket_flow():
         print(f"   ✅ Agent Assigned! (Version: {ticket_assigned['version']})")
 
         # 7. Transition to IN_PROGRESS
-        print(f"\n⚙️ Step 7: Transitioning status: TRIAGED ➔ IN_PROGRESS...")
+        print("\n⚙️ Step 7: Transitioning status: TRIAGED ➔ IN_PROGRESS...")
         trans2 = await client.post(
             f"{LIVE_API_BASE}/organisations/{org_id}/tickets/{ticket_id}/transitions",
             headers=headers,
@@ -176,7 +176,7 @@ async def run_e2e_ticket_flow():
         )
 
         # 8. Add Internal Diagnostics Note
-        print(f"\n💬 Step 8: Adding internal investigation note...")
+        print("\n💬 Step 8: Adding internal investigation note...")
         comment_resp = await client.post(
             f"{LIVE_API_BASE}/organisations/{org_id}/tickets/{ticket_id}/comments",
             headers=headers,
@@ -191,7 +191,7 @@ async def run_e2e_ticket_flow():
         print(f"   ✅ Internal note logged (Status: {comment_resp.status_code})")
 
         # 9. Resolve Ticket
-        print(f"\n✅ Step 9: Transitioning status: IN_PROGRESS ➔ RESOLVED...")
+        print("\n✅ Step 9: Transitioning status: IN_PROGRESS ➔ RESOLVED...")
         resolve_resp = await client.post(
             f"{LIVE_API_BASE}/organisations/{org_id}/tickets/{ticket_id}/transitions",
             headers=headers,
@@ -206,13 +206,13 @@ async def run_e2e_ticket_flow():
         )
         assert resolve_resp.status_code == 200, f"Resolution failed: {resolve_resp.text}"
         resolved_ticket = resolve_resp.json()
-        print(f"   ✅ TICKET RESOLVED SUCCESSFULLY!")
+        print("   ✅ TICKET RESOLVED SUCCESSFULLY!")
         print(f"      • Status:         {resolved_ticket['status']}")
         print(f"      • Ticket Number:  {resolved_ticket['ticket_number']}")
         print(f"      • Resolved At:    {resolved_ticket['resolved_at']}")
 
         # 10. Close Ticket
-        print(f"\n🔒 Step 10: Transitioning status: RESOLVED ➔ CLOSED...")
+        print("\n🔒 Step 10: Transitioning status: RESOLVED ➔ CLOSED...")
         close_resp = await client.post(
             f"{LIVE_API_BASE}/organisations/{org_id}/tickets/{ticket_id}/transitions",
             headers=headers,
@@ -220,12 +220,12 @@ async def run_e2e_ticket_flow():
         )
         assert close_resp.status_code == 200, f"Closing failed: {close_resp.text}"
         closed_ticket = close_resp.json()
-        print(f"   ✅ TICKET CLOSED & ARCHIVED!")
+        print("   ✅ TICKET CLOSED & ARCHIVED!")
         print(f"      • Final Status:   {closed_ticket['status']}")
         print(f"      • Closed At:      {closed_ticket['closed_at']}")
 
         print("\n" + "=" * 70)
-        print(f"🎉 LIVE E2E TICKET CREATION & AUTOMATIC RESOLUTION TEST PASSED 100%!")
+        print("🎉 LIVE E2E TICKET CREATION & AUTOMATIC RESOLUTION TEST PASSED 100%!")
         print("=" * 70 + "\n")
 
 

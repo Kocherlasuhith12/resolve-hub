@@ -93,15 +93,8 @@ app.add_middleware(
     allow_origins=settings.cors_origins,
     allow_origin_regex=r"https://.*\.onrender\.com|http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=[
-        "Authorization",
-        "Content-Type",
-        "X-CSRF-Token",
-        "X-Organisation-ID",
-        "X-Request-ID",
-        "X-ResolveHub-Client",
-    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 install_exception_handlers(app)
 

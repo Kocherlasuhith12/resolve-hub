@@ -1,5 +1,5 @@
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Header, Query, Request, Response, status
 
@@ -48,8 +48,9 @@ async def tickets_create(
     response: Response,
     principal: CurrentPrincipal,
     session: DbSession,
-    idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=8, max_length=128)],
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
 ) -> TicketResponse:
+    key = idempotency_key or str(uuid4())
     ticket, replayed = await create_ticket(
         session,
         actor_id=principal.user.id,
@@ -59,7 +60,7 @@ async def tickets_create(
         description=payload.description,
         priority=payload.priority,
         source=payload.source,
-        idempotency_key=idempotency_key,
+        idempotency_key=key,
         correlation_id=correlation_id(request),
     )
     if replayed:

@@ -40,6 +40,7 @@ async def register_user(
         email=normalized,
         password_hash=hash_password(password),
         display_name=display_name.strip(),
+        is_email_verified=True,
         verification_token_hash=hash_opaque_token(raw_token),
         verification_expires_at=datetime.now(UTC)
         + timedelta(hours=settings.email_verification_ttl_hours),

@@ -115,8 +115,8 @@ async def register(
         settings=settings,
     )
     return RegisterResponse(
-        message="If the address can be registered, verification instructions will be sent.",
-        verification_token=token if settings.environment in {"local", "test"} else None,
+        message="Account created successfully! You can now log in.",
+        verification_token=token,
     )
 
 

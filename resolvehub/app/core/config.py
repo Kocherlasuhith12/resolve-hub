@@ -73,6 +73,15 @@ class Settings(BaseSettings):
             raise ValueError("RH_JWT_SECRET must contain at least 32 characters")
         return value
 
+    @field_validator("database_url")
+    @classmethod
+    def validate_database_url(cls, value: str) -> str:
+        if value.startswith("postgres://"):
+            return value.replace("postgres://", "postgresql+asyncpg://", 1)
+        if value.startswith("postgresql://") and not value.startswith("postgresql+"):
+            return value.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return value
+
     @model_validator(mode="after")
     def validate_browser_cookie_security(self) -> "Settings":
         if self.environment in {"staging", "production"} and not self.browser_cookie_secure:

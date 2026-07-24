@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 import stripe
@@ -135,7 +136,7 @@ class StripeBillingService:
                         "quantity": 1,
                     }
                 )
-                kwargs: dict = {
+                kwargs: dict[str, Any] = {
                     "payment_method_types": ["card"],
                     "line_items": [line_item],
                     "mode": "subscription",

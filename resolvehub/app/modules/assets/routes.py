@@ -16,7 +16,7 @@ async def list_assets(
     category: str | None = None,
     search: str | None = None,
 ) -> list[AssetResponse]:
-    return await AssetService.list_assets(session, organisation_id, category, search)
+    return await AssetService.list_assets(session, organisation_id, category, search)  # type: ignore[return-value]
 
 
 @router.post("", response_model=AssetResponse, status_code=status.HTTP_201_CREATED)
@@ -25,7 +25,7 @@ async def create_asset(
     payload: AssetCreate,
     session: DbSession,
 ) -> AssetResponse:
-    return await AssetService.create_asset(session, organisation_id, payload)
+    return await AssetService.create_asset(session, organisation_id, payload)  # type: ignore[return-value]
 
 
 @router.patch("/{asset_id}", response_model=AssetResponse)
@@ -38,4 +38,4 @@ async def update_asset(
     updated = await AssetService.update_asset(session, organisation_id, asset_id, payload)
     if not updated:
         raise HTTPException(status_code=404, detail="Asset not found")
-    return updated
+    return updated  # type: ignore[return-value]

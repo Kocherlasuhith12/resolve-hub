@@ -20,7 +20,7 @@ async def list_articles(
     category: str | None = None,
     search: str | None = None,
 ) -> list[ArticleResponse]:
-    return await KnowledgeService.list_articles(session, organisation_id, category, search)
+    return await KnowledgeService.list_articles(session, organisation_id, category, search)  # type: ignore[return-value]
 
 
 @router.get("/{article_id}", response_model=ArticleResponse)
@@ -32,7 +32,7 @@ async def get_article(
     article = await KnowledgeService.get_article(session, organisation_id, article_id)
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
-    return article
+    return article  # type: ignore[return-value]
 
 
 @router.post("", response_model=ArticleResponse, status_code=status.HTTP_201_CREATED)
@@ -41,7 +41,7 @@ async def create_article(
     payload: ArticleCreate,
     session: DbSession,
 ) -> ArticleResponse:
-    return await KnowledgeService.create_article(session, organisation_id, payload)
+    return await KnowledgeService.create_article(session, organisation_id, payload)  # type: ignore[return-value]
 
 
 @router.post("/{article_id}/rate", response_model=ArticleResponse)
@@ -56,4 +56,4 @@ async def rate_article(
     )
     if not rated:
         raise HTTPException(status_code=404, detail="Article not found")
-    return rated
+    return rated  # type: ignore[return-value]

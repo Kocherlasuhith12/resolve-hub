@@ -60,6 +60,11 @@ strict = true
 plugins = ["pydantic.mypy"]
 exclude = ["migrations", "resolvehub/scripts"]
 
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

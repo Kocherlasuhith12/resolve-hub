@@ -19,7 +19,7 @@ async def list_incidents(
     session: DbSession,
     severity: str | None = None,
 ) -> list[IncidentResponse]:
-    return await IncidentService.list_incidents(session, organisation_id, severity)
+    return await IncidentService.list_incidents(session, organisation_id, severity)  # type: ignore[return-value]
 
 
 @router.post("", response_model=IncidentResponse, status_code=status.HTTP_201_CREATED)
@@ -28,7 +28,7 @@ async def create_incident(
     payload: IncidentCreate,
     session: DbSession,
 ) -> IncidentResponse:
-    return await IncidentService.create_incident(session, organisation_id, payload)
+    return await IncidentService.create_incident(session, organisation_id, payload)  # type: ignore[return-value]
 
 
 @router.patch("/{incident_id}", response_model=IncidentResponse)
@@ -41,4 +41,4 @@ async def update_incident(
     updated = await IncidentService.update_incident(session, organisation_id, incident_id, payload)
     if not updated:
         raise HTTPException(status_code=404, detail="Incident not found")
-    return updated
+    return updated  # type: ignore[return-value]

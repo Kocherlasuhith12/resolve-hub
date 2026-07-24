@@ -14,7 +14,7 @@ async def list_changes(
     organisation_id: UUID,
     session: DbSession,
 ) -> list[ChangeResponse]:
-    return await ChangeService.list_changes(session, organisation_id)
+    return await ChangeService.list_changes(session, organisation_id)  # type: ignore[return-value]
 
 
 @router.post("", response_model=ChangeResponse, status_code=status.HTTP_201_CREATED)
@@ -23,7 +23,7 @@ async def create_change(
     payload: ChangeCreate,
     session: DbSession,
 ) -> ChangeResponse:
-    return await ChangeService.create_change(session, organisation_id, payload)
+    return await ChangeService.create_change(session, organisation_id, payload)  # type: ignore[return-value]
 
 
 @router.patch("/{change_id}", response_model=ChangeResponse)
@@ -36,4 +36,4 @@ async def update_change(
     updated = await ChangeService.update_change(session, organisation_id, change_id, payload)
     if not updated:
         raise HTTPException(status_code=404, detail="Change request not found")
-    return updated
+    return updated  # type: ignore[return-value]

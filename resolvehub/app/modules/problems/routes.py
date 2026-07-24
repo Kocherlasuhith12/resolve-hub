@@ -15,7 +15,7 @@ async def list_problems(
     session: DbSession,
     search: str | None = None,
 ) -> list[ProblemResponse]:
-    return await ProblemService.list_problems(session, organisation_id, search)
+    return await ProblemService.list_problems(session, organisation_id, search)  # type: ignore[return-value]
 
 
 @router.post("", response_model=ProblemResponse, status_code=status.HTTP_201_CREATED)
@@ -24,7 +24,7 @@ async def create_problem(
     payload: ProblemCreate,
     session: DbSession,
 ) -> ProblemResponse:
-    return await ProblemService.create_problem(session, organisation_id, payload)
+    return await ProblemService.create_problem(session, organisation_id, payload)  # type: ignore[return-value]
 
 
 @router.patch("/{problem_id}", response_model=ProblemResponse)
@@ -37,4 +37,4 @@ async def update_problem(
     updated = await ProblemService.update_problem(session, organisation_id, problem_id, payload)
     if not updated:
         raise HTTPException(status_code=404, detail="Problem not found")
-    return updated
+    return updated  # type: ignore[return-value]

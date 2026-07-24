@@ -21,13 +21,20 @@ def upgrade() -> None:
         "incidents",
         sa.Column("id", sa.UUID(), nullable=False, primary_key=True),
         sa.Column("incident_number", sa.String(24), nullable=False, unique=True),
-        sa.Column("organisation_id", sa.UUID(), sa.ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "organisation_id",
+            sa.UUID(),
+            sa.ForeignKey("organisations.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("title", sa.String(200), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column("severity", sa.String(20), nullable=False, server_default="P3 - Moderate"),
         sa.Column("service_name", sa.String(120), nullable=False),
         sa.Column("status", sa.String(40), nullable=False, server_default="Investigating"),
-        sa.Column("commander_name", sa.String(120), nullable=False, server_default="DevOps On-Call"),
+        sa.Column(
+            "commander_name", sa.String(120), nullable=False, server_default="DevOps On-Call"
+        ),
         sa.Column("impact_summary", sa.Text(), nullable=False, server_default=""),
         sa.Column("resolved_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
@@ -41,7 +48,12 @@ def upgrade() -> None:
         "problems",
         sa.Column("id", sa.UUID(), nullable=False, primary_key=True),
         sa.Column("problem_number", sa.String(24), nullable=False, unique=True),
-        sa.Column("organisation_id", sa.UUID(), sa.ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "organisation_id",
+            sa.UUID(),
+            sa.ForeignKey("organisations.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("title", sa.String(200), nullable=False),
         sa.Column("category", sa.String(80), nullable=False, server_default="Infrastructure"),
         sa.Column("status", sa.String(40), nullable=False, server_default="Investigation"),
@@ -59,14 +71,24 @@ def upgrade() -> None:
         "changes",
         sa.Column("id", sa.UUID(), nullable=False, primary_key=True),
         sa.Column("change_number", sa.String(24), nullable=False, unique=True),
-        sa.Column("organisation_id", sa.UUID(), sa.ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "organisation_id",
+            sa.UUID(),
+            sa.ForeignKey("organisations.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("title", sa.String(200), nullable=False),
         sa.Column("description", sa.Text(), nullable=False, server_default=""),
         sa.Column("change_type", sa.String(40), nullable=False, server_default="Normal"),
         sa.Column("risk_level", sa.String(40), nullable=False, server_default="Medium"),
         sa.Column("status", sa.String(40), nullable=False, server_default="CAB Approval"),
         sa.Column("owner_name", sa.String(120), nullable=False, server_default="DevOps Team"),
-        sa.Column("maintenance_window", sa.String(120), nullable=False, server_default="Sat 02:00 - 04:00 UTC"),
+        sa.Column(
+            "maintenance_window",
+            sa.String(120),
+            nullable=False,
+            server_default="Sat 02:00 - 04:00 UTC",
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
@@ -78,7 +100,12 @@ def upgrade() -> None:
         "assets",
         sa.Column("id", sa.UUID(), nullable=False, primary_key=True),
         sa.Column("asset_tag", sa.String(24), nullable=False, unique=True),
-        sa.Column("organisation_id", sa.UUID(), sa.ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "organisation_id",
+            sa.UUID(),
+            sa.ForeignKey("organisations.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("name", sa.String(200), nullable=False),
         sa.Column("category", sa.String(80), nullable=False, server_default="Laptop"),
         sa.Column("status", sa.String(40), nullable=False, server_default="In Use"),
@@ -96,7 +123,12 @@ def upgrade() -> None:
         "knowledge_articles",
         sa.Column("id", sa.UUID(), nullable=False, primary_key=True),
         sa.Column("article_number", sa.String(24), nullable=False, unique=True),
-        sa.Column("organisation_id", sa.UUID(), sa.ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "organisation_id",
+            sa.UUID(),
+            sa.ForeignKey("organisations.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("title", sa.String(200), nullable=False),
         sa.Column("slug", sa.String(200), nullable=False),
         sa.Column("summary", sa.Text(), nullable=False, server_default=""),
@@ -109,8 +141,12 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
-    op.create_index("ix_knowledge_articles_org_created", "knowledge_articles", ["organisation_id", "created_at"])
-    op.create_index("ix_knowledge_articles_article_number", "knowledge_articles", ["article_number"])
+    op.create_index(
+        "ix_knowledge_articles_org_created", "knowledge_articles", ["organisation_id", "created_at"]
+    )
+    op.create_index(
+        "ix_knowledge_articles_article_number", "knowledge_articles", ["article_number"]
+    )
 
 
 def downgrade() -> None:

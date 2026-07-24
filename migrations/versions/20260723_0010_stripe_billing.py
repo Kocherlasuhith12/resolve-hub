@@ -38,7 +38,9 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
-    op.create_index("ix_subscriptions_org_created", "subscriptions", ["organisation_id", "created_at"])
+    op.create_index(
+        "ix_subscriptions_org_created", "subscriptions", ["organisation_id", "created_at"]
+    )
     op.create_index("ix_subscriptions_stripe_customer", "subscriptions", ["stripe_customer_id"])
     op.create_index("ix_subscriptions_stripe_sub", "subscriptions", ["stripe_subscription_id"])
 

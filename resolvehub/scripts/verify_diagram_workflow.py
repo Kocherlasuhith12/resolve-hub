@@ -188,46 +188,66 @@ async def run_full_diagram_verification():
             headers=headers,
             json={
                 "title": "Major Outage: DB Pool Exhaustion",
+                "description": "DB connection pool maxed out. High latency across microservices.",
                 "severity": "P1 - Critical",
                 "service_name": "Database Primary",
                 "impact_summary": "Affecting 25% of checkout transactions.",
             },
         )
-        print(f"   ✓ INCIDENTS (P1 Outage Room): Status {inc_resp.status_code}")
+        assert inc_resp.status_code == 201, f"Incident creation failed: {inc_resp.text}"
+        print(
+            f"   ✓ INCIDENTS (P1 Outage Room): Status {inc_resp.status_code} ({inc_resp.json()['incident_number']})"
+        )
 
         prob_resp = await client.post(
             f"{LIVE_API_BASE}/organisations/{org_id}/problems",
             headers=headers,
             json={
                 "title": "Root Cause Analysis: Connection Leak in Payment Microservice",
-                "impact": "High",
+                "category": "Infrastructure",
                 "root_cause": "Asyncpg client session unclosed in exception handler.",
+                "workaround": "Recycle pod instances every 6 hours.",
+                "impacted_incidents_count": 1,
             },
         )
-        print(f"   ✓ PROBLEMS (Root Cause Analysis - RCA): Status {prob_resp.status_code}")
+        assert prob_resp.status_code == 201, f"Problem creation failed: {prob_resp.text}"
+        print(
+            f"   ✓ PROBLEMS (Root Cause Analysis - RCA): Status {prob_resp.status_code} ({prob_resp.json()['problem_number']})"
+        )
 
         change_resp = await client.post(
             f"{LIVE_API_BASE}/organisations/{org_id}/changes",
             headers=headers,
             json={
                 "title": "Deploy Hotfix Patch v2.4.2 & Increase Pool Limit",
+                "description": "Emergency change request for DB pool scaling.",
                 "risk_level": "Medium",
                 "change_type": "Emergency",
+                "owner_name": "DevOps On-Call",
+                "maintenance_window": "Sat 02:00 - 04:00 UTC",
             },
         )
-        print(f"   ✓ CHANGES (CAB Approval Flow): Status {change_resp.status_code}")
+        assert change_resp.status_code == 201, f"Change creation failed: {change_resp.text}"
+        print(
+            f"   ✓ CHANGES (CAB Approval Flow): Status {change_resp.status_code} ({change_resp.json()['change_number']})"
+        )
 
         asset_resp = await client.post(
             f"{LIVE_API_BASE}/organisations/{org_id}/assets",
             headers=headers,
             json={
                 "name": "DB-Primary-Node-01",
-                "asset_tag": "AST-DB-01",
                 "category": "Server",
                 "status": "In Use",
+                "assigned_to_name": "Infrastructure Team",
+                "serial_number": "SRV-99812-DB",
+                "location": "Primary AWS us-east-1",
             },
         )
-        print(f"   ✓ ASSETS (ITAM Linking): Status {asset_resp.status_code}")
+        assert asset_resp.status_code == 201, f"Asset creation failed: {asset_resp.text}"
+        print(
+            f"   ✓ ASSETS (ITAM Linking): Status {asset_resp.status_code} ({asset_resp.json()['asset_tag']})"
+        )
 
         # ----------------------------------------------------------------------
         # 6. RESOLUTION & CUSTOMER REVIEW (Reopen Branch & Close Branch)
@@ -297,9 +317,16 @@ async def run_full_diagram_verification():
         # ----------------------------------------------------------------------
         print("\n[BOX 10] 📊 Analytics & Reporting (MTTR, SLA %, Workload)...")
         analytics_resp = await client.get(
-            f"{LIVE_API_BASE}/organisations/{org_id}/analytics/overview", headers=headers
+            f"{LIVE_API_BASE}/organisations/{org_id}/analytics/summary", headers=headers
         )
-        print(f"   ✓ Analytics Dashboard Data (Status: {analytics_resp.status_code})")
+        assert analytics_resp.status_code == 200, f"Analytics failed: {analytics_resp.text}"
+        analytics_data = analytics_resp.json()
+        print(f"   ✓ Analytics Summary Data Fetched (Status 200)")
+        print(f"      • Total Tickets:       {analytics_data['total_tickets']}")
+        print(f"      • Open Tickets:        {analytics_data['open_tickets']}")
+        print(f"      • Resolved Tickets:    {analytics_data['resolved_tickets']}")
+        print(f"      • SLA Met Rate:        {analytics_data['sla_met_rate_percent']}%")
+        print(f"      • Average MTTR Hours:  {analytics_data['avg_resolution_hours']} hrs")
 
         print("\n" + "=" * 80)
         print("🎉 DIAGRAM VERIFICATION COMPLETE: ALL 10 BOXES, BRANCHES & FLOWS PASSED 100%!")

@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from resolvehub.app.core.database import set_session_organisation_id
 from resolvehub.app.modules.problems.models import Problem
 from resolvehub.app.modules.problems.schemas import ProblemCreate, ProblemUpdate
 
@@ -13,6 +14,7 @@ class ProblemService:
     async def list_problems(
         session: AsyncSession, organisation_id: UUID, search: str | None = None
     ) -> list[Problem]:
+        await set_session_organisation_id(session, organisation_id)
         query = select(Problem).where(Problem.organisation_id == organisation_id)
         if search:
             query = query.where(
@@ -26,6 +28,7 @@ class ProblemService:
     async def create_problem(
         session: AsyncSession, organisation_id: UUID, payload: ProblemCreate
     ) -> Problem:
+        await set_session_organisation_id(session, organisation_id)
         number = f"PRB-{random.randint(1000, 9999)}"
         problem = Problem(
             organisation_id=organisation_id,

@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from resolvehub.app.core.database import set_session_organisation_id
 from resolvehub.app.modules.incidents.models import Incident
 from resolvehub.app.modules.incidents.schemas import IncidentCreate, IncidentUpdate
 
@@ -14,6 +15,7 @@ class IncidentService:
     async def list_incidents(
         session: AsyncSession, organisation_id: UUID, severity: str | None = None
     ) -> list[Incident]:
+        await set_session_organisation_id(session, organisation_id)
         query = select(Incident).where(Incident.organisation_id == organisation_id)
         if severity and severity != "ALL":
             query = query.where(Incident.severity.contains(severity))
@@ -25,6 +27,7 @@ class IncidentService:
     async def create_incident(
         session: AsyncSession, organisation_id: UUID, payload: IncidentCreate
     ) -> Incident:
+        await set_session_organisation_id(session, organisation_id)
         number = f"INC-2026-{random.randint(100, 999)}"
         incident = Incident(
             organisation_id=organisation_id,

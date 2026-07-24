@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from resolvehub.app.core.database import set_session_organisation_id
 from resolvehub.app.modules.assets.models import AssetItem
 from resolvehub.app.modules.assets.schemas import AssetCreate, AssetUpdate
 
@@ -16,6 +17,7 @@ class AssetService:
         category: str | None = None,
         search: str | None = None,
     ) -> list[AssetItem]:
+        await set_session_organisation_id(session, organisation_id)
         query = select(AssetItem).where(AssetItem.organisation_id == organisation_id)
         if category and category != "ALL":
             query = query.where(AssetItem.category == category)
@@ -31,6 +33,7 @@ class AssetService:
     async def create_asset(
         session: AsyncSession, organisation_id: UUID, payload: AssetCreate
     ) -> AssetItem:
+        await set_session_organisation_id(session, organisation_id)
         tag = f"AST-2026-{random.randint(100, 999)}"
         asset = AssetItem(
             organisation_id=organisation_id,

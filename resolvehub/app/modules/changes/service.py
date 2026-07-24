@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from resolvehub.app.core.database import set_session_organisation_id
 from resolvehub.app.modules.changes.models import ChangeRequest
 from resolvehub.app.modules.changes.schemas import ChangeCreate, ChangeUpdate
 
@@ -11,6 +12,7 @@ from resolvehub.app.modules.changes.schemas import ChangeCreate, ChangeUpdate
 class ChangeService:
     @staticmethod
     async def list_changes(session: AsyncSession, organisation_id: UUID) -> list[ChangeRequest]:
+        await set_session_organisation_id(session, organisation_id)
         query = (
             select(ChangeRequest)
             .where(ChangeRequest.organisation_id == organisation_id)
@@ -23,6 +25,7 @@ class ChangeService:
     async def create_change(
         session: AsyncSession, organisation_id: UUID, payload: ChangeCreate
     ) -> ChangeRequest:
+        await set_session_organisation_id(session, organisation_id)
         number = f"CHG-2026-{random.randint(100, 999)}"
         change = ChangeRequest(
             organisation_id=organisation_id,

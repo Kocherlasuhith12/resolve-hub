@@ -147,7 +147,9 @@ async def run_e2e_ticket_flow():
         )
         assert trans1.status_code == 200, f"Transition to TRIAGED failed: {trans1.text}"
         ticket_triaged = trans1.json()
-        print(f"   ✅ Status updated: {ticket_triaged['status']} (Version: {ticket_triaged['version']})")
+        print(
+            f"   ✅ Status updated: {ticket_triaged['status']} (Version: {ticket_triaged['version']})"
+        )
 
         # 6. Assign Ticket to User
         print(f"\n👤 Step 6: Assigning Ticket to Agent ({user_data['display_name']})...")
@@ -169,7 +171,9 @@ async def run_e2e_ticket_flow():
         )
         assert trans2.status_code == 200, f"Transition to IN_PROGRESS failed: {trans2.text}"
         ticket_in_prog = trans2.json()
-        print(f"   ✅ Status updated: {ticket_in_prog['status']} (Version: {ticket_in_prog['version']})")
+        print(
+            f"   ✅ Status updated: {ticket_in_prog['status']} (Version: {ticket_in_prog['version']})"
+        )
 
         # 8. Add Internal Diagnostics Note
         print(f"\n💬 Step 8: Adding internal investigation note...")
